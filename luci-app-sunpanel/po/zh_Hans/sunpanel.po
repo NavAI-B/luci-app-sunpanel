@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: luci-app-sunpanel 1.0.0\n"
-"POT-Creation-Date: 2026-11-19 07:40\n"
+"POT-Creation-Date: 2026-11-19 08:23\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -24,14 +24,14 @@ msgstr "版本管理"
 msgid "Loading…"
 msgstr "加载中…"
 
-msgid "Status"
-msgstr "运行状态"
-
 msgid "Update installed successfully"
 msgstr "更新安装成功"
 
 msgid "Update failed, rolled back automatically"
 msgstr "更新失败，已自动回滚"
+
+msgid "Status"
+msgstr "运行状态"
 
 msgid "Running"
 msgstr "运行中"
@@ -63,6 +63,9 @@ msgstr "数据目录"
 msgid "Open panel"
 msgstr "打开面板"
 
+msgid "Service start/stop is controlled by the enable checkbox: save to apply."
+msgstr "服务的启停由「启用服务」开关控制：保存配置即可生效。"
+
 msgid "Enable service"
 msgstr "启用服务"
 
@@ -78,26 +81,23 @@ msgstr "监听地址"
 msgid "Token lifetime (hours)"
 msgstr "Token 有效期（小时）"
 
-msgid "Contains conf / database / uploads / runtime / custom / micro_app; keep it on a large partition"
-msgstr "包含 conf / database / uploads / runtime / custom / micro_app，建议放在大容量分区"
-
 msgid "Manage conf.ini from LuCI"
 msgstr "由 LuCI 管理 conf.ini"
 
-msgid "When enabled, conf/conf.ini is regenerated from these options at every service start; when disabled it is only created once and manual edits survive"
-msgstr "开启后每次启动按上方配置重新生成 conf/conf.ini；关闭则仅首次生成，保留手工修改"
+msgid "Save settings"
+msgstr "保存配置"
 
-msgid "Restart service"
-msgstr "重启服务"
+msgid "Settings saved"
+msgstr "设置已保存"
+
+msgid "Operation failed: %s"
+msgstr "操作失败：%s"
 
 msgid "conf.ini rendering failed"
 msgstr "conf.ini 渲染失败"
 
 msgid "Configuration rendered, service restarted"
 msgstr "配置已渲染，服务已重启"
-
-msgid "Operation failed: %s"
-msgstr "操作失败：%s"
 
 msgid "Empty for direct connection, e.g. https://ghfast.top"
 msgstr "留空直连，例如 https://ghfast.top"
@@ -111,6 +111,12 @@ msgstr "稳定版（v1.x 线）"
 msgid "Beta (v2 line)"
 msgstr "测试版（v2 线）"
 
+msgid "Check for updates"
+msgstr "检查更新"
+
+msgid "Update version"
+msgstr "更新版本"
+
 msgid "Update channel"
 msgstr "更新通道"
 
@@ -119,15 +125,6 @@ msgstr "GitHub 加速前缀"
 
 msgid "Download proxy"
 msgstr "下载代理"
-
-msgid "Save settings"
-msgstr "保存配置"
-
-msgid "Check for updates"
-msgstr "检查更新"
-
-msgid "Update version"
-msgstr "更新版本"
 
 msgid "Latest version"
 msgstr "最新版本"

@@ -192,7 +192,9 @@ const EN_MAP = {
   '发布源设置已保存': 'Release source settings saved',
   '最新版本': 'Latest version',
   '选择版本': 'Select version',
-  '更新版本': 'Update version'
+  '更新版本': 'Update version',
+  '服务的启停由「启用服务」开关控制：保存配置即可生效。': 'Service start/stop is controlled by the enable checkbox: save to apply.',
+  '设置已保存': 'Settings saved'
 };
 
 const ZH_MAP = Object.fromEntries(Object.entries(EN_MAP).map(([zh, en]) => [en, zh]));

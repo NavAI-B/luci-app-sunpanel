@@ -5,7 +5,6 @@
 'require rpc';
 'require uci';
 'require poll';
-'require form';
 'require dom';
 
 var callSetInit = rpc.declare({
@@ -43,12 +42,19 @@ function badge(text, cls) {
 function kvTable(rows) {
 	var tbl = E('table', { 'class': 'table' });
 	for (var i = 0; i < rows.length; i++) {
-		tbl.appendChild(E('tr', {}, [
-			E('td', { 'style': 'width:33%' }, [ rows[i][0] ]),
-			E('td', {}, [ rows[i][1] ])
-		]));
+		var tr = E('tr', {}, [ E('td', { 'style': 'width:220px; vertical-align:middle' }, [ rows[i][0] ]) ]);
+		for (var j = 1; j < rows[i].length; j++)
+			tr.appendChild(E('td', { 'style': 'vertical-align:middle' }, [ rows[i][j] ]));
+		tbl.appendChild(tr);
 	}
 	return tbl;
+}
+
+function textInput(value, placeholder) {
+	return E('input', {
+		'type': 'text', 'class': 'cbi-input-text', 'value': value || '',
+		'placeholder': placeholder || '', 'style': 'width:100%'
+	});
 }
 
 function channel(info) {
@@ -82,11 +88,12 @@ return view.extend({
 
 		/* ================= status tab ================= */
 		var statusBox = E('div', {}, E('em', {}, _('Loading…')));
-		tabStatus.appendChild(E('div', { 'class': 'cbi-section' }, [
-			E('div', { 'class': 'cbi-section-title' }, [ _('Status') ]),
-			statusBox
-		]));
+		tabStatus.appendChild(statusBox);
 		this.renderStatusBox(statusBox, self._info);
+
+		/* ================= settings tab ================= */
+		var settingsBox = E('div', {}, E('em', {}, _('Loading…')));
+		tabSettings.appendChild(settingsBox);
 
 		/* ================= version tab ================= */
 		var versionBox = E('div', {});
@@ -121,12 +128,9 @@ return view.extend({
 			}).catch(function() {});
 		}, this), 3);
 
-		// settings tab: form.Map#render is asynchronous; init tabs once present
-		return this.buildSettings(self._info).then(function(settingsNode) {
-			tabSettings.appendChild(settingsNode);
-			ui.tabs.initTabGroup(tabs.childNodes);
-			return container;
-		});
+		this.renderSettings(settingsBox);
+		ui.tabs.initTabGroup(tabs.childNodes);
+		return container;
 	},
 
 	renderStatusBox: function(box, info) {
@@ -140,62 +144,87 @@ return view.extend({
 			[ _('Data directory'), info.data_dir ]
 		]));
 
-		box.appendChild(E('div', { 'style': 'margin-top:.8em' }, [
+		box.appendChild(E('div', { 'style': 'margin-top:1em' }, [
 			E('a', {
 				'href': 'http://' + window.location.hostname + ':' + info.port + '/',
 				'target': '_blank',
 				'class': 'btn cbi-button cbi-button-action'
 			}, [ _('Open panel') ])
 		]));
+		box.appendChild(E('div', { 'style': 'margin-top:2em' }));
 	},
 
 	/* ================= settings tab ================= */
 
-	buildSettings: function(info) {
+	renderSettings: function(box) {
 		var self = this;
-		var m, s, o;
+		box.innerHTML = '';
 
-		m = new form.Map('sunpanel');
+		var uciGet = function(k, def) {
+			var v = uci.get('sunpanel', 'sunpanel', k);
+			return (v == null || v === '') ? (def || '') : v;
+		};
 
-		s = m.section(form.NamedSection, 'sunpanel', 'sunpanel');
-		s.addremove = false;
+		var enabledCb = E('input', {
+			'type': 'checkbox', 'class': 'cbi-input-checkbox',
+			'checked': uciGet('enabled', '1') == '1' ? 'checked' : null
+		});
+		var portInput = textInput(uciGet('port', '3002'));
+		var httpsInput = textInput(uciGet('https_port', '3003'));
+		var listenInput = textInput(uciGet('listen', '0.0.0.0'));
+		var tokenInput = textInput(uciGet('token_expires', '168'));
+		var dataDirInput = textInput(uciGet('data_dir', '/mnt/mmcblk0p1/sun-panel/data'));
+		var manageCb = E('input', {
+			'type': 'checkbox', 'class': 'cbi-input-checkbox',
+			'checked': uciGet('manage_conf', '1') == '1' ? 'checked' : null
+		});
 
-		o = s.option(form.Flag, 'enabled', _('Enable service'));
-		o.default = o.enabled;
-		o.rmempty = false;
+		box.appendChild(E('p', {}, [ _('Service start/stop is controlled by the enable checkbox: save to apply.') ]));
 
-		o = s.option(form.Value, 'port', _('HTTP port'));
-		o.datatype = 'port';
-		o.rmempty = false;
+		box.appendChild(kvTable([
+			[ _('Enable service'), enabledCb ],
+			[ _('HTTP port'), portInput ],
+			[ _('HTTPS port'), httpsInput ],
+			[ _('Listen address'), listenInput ],
+			[ _('Token lifetime (hours)'), tokenInput ],
+			[ _('Data directory'), dataDirInput ],
+			[ _('Manage conf.ini from LuCI'), manageCb ],
+			[ '', E('button', {
+				'class': 'btn cbi-button cbi-button-action',
+				'click': ui.createHandlerFn(self, function() {
+					return self.saveSettings(box, {
+						enabled: enabledCb.checked ? '1' : '0',
+						port: portInput.value,
+						https_port: httpsInput.value,
+						listen: listenInput.value,
+						token_expires: tokenInput.value,
+						data_dir: dataDirInput.value,
+						manage_conf: manageCb.checked ? '1' : '0'
+					});
+				})
+			}, [ _('Save settings') ]) ]
+		]));
+		box.appendChild(E('div', { 'style': 'margin-top:2em' }));
+	},
 
-		o = s.option(form.Value, 'https_port', _('HTTPS port'));
-		o.datatype = 'port';
-
-		o = s.option(form.Value, 'listen', _('Listen address'));
-		o.datatype = 'ipaddr';
-		o.placeholder = '0.0.0.0';
-
-		o = s.option(form.Value, 'token_expires', _('Token lifetime (hours)'));
-		o.datatype = 'uinteger';
-
-		o = s.option(form.Value, 'data_dir', _('Data directory'));
-		o.rmempty = false;
-		o.description = _('Contains conf / database / uploads / runtime / custom / micro_app; keep it on a large partition');
-
-		o = s.option(form.Flag, 'manage_conf', _('Manage conf.ini from LuCI'));
-		o.default = o.enabled;
-		o.description = _('When enabled, conf/conf.ini is regenerated from these options at every service start; when disabled it is only created once and manual edits survive');
-
-		return m.render().then(function(mapNode) {
-			return E('div', {}, [
-				mapNode,
-				E('div', { 'class': 'cbi-page-actions' }, [
-					E('button', {
-						'class': 'btn cbi-button cbi-button-negative',
-						'click': ui.createHandlerFn(self, function(ev) { return self.restartService(ev); })
-					}, [ _('Restart service') ])
-				])
-			]);
+	saveSettings: function(box, v) {
+		var self = this;
+		uci.set('sunpanel', 'sunpanel', 'enabled', v.enabled);
+		uci.set('sunpanel', 'sunpanel', 'port', v.port);
+		uci.set('sunpanel', 'sunpanel', 'https_port', v.https_port);
+		uci.set('sunpanel', 'sunpanel', 'listen', v.listen);
+		uci.set('sunpanel', 'sunpanel', 'token_expires', v.token_expires);
+		uci.set('sunpanel', 'sunpanel', 'data_dir', v.data_dir);
+		uci.set('sunpanel', 'sunpanel', 'manage_conf', v.manage_conf);
+		return uci.save().then(function() {
+			return uci.apply(15);
+		}).then(function() {
+			return disp('info');
+		}).then(function(inf) {
+			self._info = inf;
+			ui.addTimeLimitedNotification(null, E('p', {}, [ _('Settings saved') ]), 3000);
+		}).catch(function(e) {
+			ui.addNotification(null, E('p', {}, [ _('Operation failed: %s').format(e) ]));
 		});
 	},
 
@@ -218,52 +247,18 @@ return view.extend({
 		box.innerHTML = '';
 		self._info = info;
 
-		var appDirInput = E('input', {
-			'type': 'text', 'class': 'cbi-input-text', 'value': info.app_dir,
-			'style': 'width:100%'
-		});
-		var mirrorInput = E('input', {
-			'type': 'text', 'class': 'cbi-input-text', 'value': info.mirror || '',
-			'placeholder': _('Empty for direct connection, e.g. https://ghfast.top'),
-			'style': 'width:100%'
-		});
+		var appDirInput = textInput(info.app_dir);
+		var mirrorInput = textInput(info.mirror || '', _('Empty for direct connection, e.g. https://ghfast.top'));
 		var proxyVal = '';
 		try {
 			proxyVal = uci.get('sunpanel', 'sunpanel', 'proxy') || '';
 		} catch (e) {}
-		var proxyInput = E('input', {
-			'type': 'text', 'class': 'cbi-input-text', 'value': proxyVal,
-			'placeholder': _('Empty to disable, e.g. http://127.0.0.1:7890'),
-			'style': 'width:100%'
-		});
+		var proxyInput = textInput(proxyVal, _('Empty to disable, e.g. http://127.0.0.1:7890'));
 		var chSel = E('select', { 'class': 'cbi-input-select', 'style': 'width:auto' }, [
 			E('option', { 'value': 'stable', 'selected': (channel(info) == 'stable') ? 'selected' : null }, [ _('Stable (v1.x line)') ]),
 			E('option', { 'value': 'beta', 'selected': (channel(info) == 'beta') ? 'selected' : null }, [ _('Beta (v2 line)') ])
 		]);
 
-		box.appendChild(E('div', { 'class': 'cbi-section' }, [
-			E('table', { 'class': 'table' }, [
-				E('tr', {}, [ E('td', { 'style': 'width:200px' }, [ _('Program directory') ]), E('td', {}, [ appDirInput ]) ]),
-				E('tr', {}, [ E('td', {}, [ _('Update channel') ]), E('td', {}, [ chSel ]) ]),
-				E('tr', {}, [ E('td', {}, [ _('GitHub mirror prefix') ]), E('td', {}, [ mirrorInput ]) ]),
-				E('tr', {}, [ E('td', {}, [ _('Download proxy') ]), E('td', {}, [ proxyInput ]) ]),
-				E('tr', {}, [ E('td', {}, [ '' ]), E('td', {}, [
-					E('button', {
-						'class': 'btn cbi-button cbi-button-action',
-						'click': ui.createHandlerFn(self, function() {
-							return self.saveReleaseSettings(box, {
-								app_dir: appDirInput.value,
-								channel: chSel.value,
-								mirror: mirrorInput.value,
-								proxy: proxyInput.value
-							});
-						})
-					}, [ _('Save settings') ])
-				]) ])
-			])
-		]));
-
-		/* ---------- version rows ---------- */
 		var checkBtn = E('button', {
 			'class': 'btn cbi-button cbi-button-action',
 			'click': ui.createHandlerFn(self, function(ev) {
@@ -286,7 +281,7 @@ return view.extend({
 						'selected': i == 0 ? 'selected' : null
 					}, [ '%s  ·  %s  ·  %s'.format(list[i].tag, (list[i].date || '').slice(0, 10), fmtSize(list[i].size)) ]));
 				}
-				selWidget = verSel = self._verSel = E('select', { 'class': 'cbi-input-select', 'style': 'width:auto; min-width:280px' }, opts);
+				selWidget = self._verSel = E('select', { 'class': 'cbi-input-select', 'style': 'width:auto; min-width:280px' }, opts);
 			}
 		}
 
@@ -306,6 +301,24 @@ return view.extend({
 			updateBtn.disabled = 'disabled';
 
 		box.appendChild(E('div', { 'class': 'cbi-section' }, [
+			kvTable([
+				[ _('Program directory'), appDirInput ],
+				[ _('Update channel'), chSel ],
+				[ _('GitHub mirror prefix'), mirrorInput ],
+				[ _('Download proxy'), proxyInput ],
+				[ '', E('button', {
+					'class': 'btn cbi-button cbi-button-action',
+					'click': ui.createHandlerFn(self, function() {
+						return self.saveReleaseSettings(box, {
+							app_dir: appDirInput.value,
+							channel: chSel.value,
+							mirror: mirrorInput.value,
+							proxy: proxyInput.value
+						});
+					})
+				}, [ _('Save settings') ]) ]
+			]),
+			E('div', { 'style': 'margin-top:2em' }),
 			kvTable([
 				[ _('Installed version'), (info.installed_version || '-') + '　', checkBtn ],
 				[ _('Latest version'), latestText ],

@@ -1,0 +1,52 @@
+'use strict';
+var o = {
+	renderSettings: function(box) {
+		var self = this;
+		box.innerHTML = '';
+
+		var uciGet = function(k, def) {
+			var v = uci.get('sunpanel', 'sunpanel', k);
+			return (v == null || v === '') ? (def || '') : v;
+		};
+
+		var enabledCb = E('input', {
+			'type': 'checkbox', 'class': 'cbi-input-checkbox',
+			'checked': uciGet('enabled', '1') == '1' ? 'checked' : null
+		});
+		var portInput = textInput(uciGet('port', '3002'));
+		var httpsInput = textInput(uciGet('https_port', '3003'));
+		var listenInput = textInput(uciGet('listen', '0.0.0.0'));
+		var tokenInput = textInput(uciGet('token_expires', '168'));
+		var dataDirInput = textInput(uciGet('data_dir', '/mnt/mmcblk0p1/sun-panel/data'));
+		var manageCb = E('input', {
+			'type': 'checkbox', 'class': 'cbi-input-checkbox',
+			'checked': uciGet('manage_conf', '1') == '1' ? 'checked' : null
+		});
+
+		box.appendChild(E('div', { 'class': 'cbi-section' }, [
+			E('p', {}, [ _('Service start/stop is controlled by the enable checkbox: save to apply.') ]),
+			kvTable([
+				[ _('Enable service'), enabledCb ],
+				[ _('HTTP port'), portInput ],
+				[ _('HTTPS port'), httpsInput ],
+				[ _('Listen address'), listenInput ],
+				[ _('Token lifetime (hours)'), tokenInput ],
+				[ _('Data directory'), dataDirInput ],
+				[ _('Manage conf.ini from LuCI'), manageCb ],
+				[ '', E('button', {
+					'class': 'btn cbi-button cbi-button-action',
+					'click': ui.createHandlerFn(self, function() {
+						return self.saveSettings(box, {
+							enabled: enabledCb.checked ? '1' : '0',
+							port: portInput.value,
+							https_port: httpsInput.value,
+							listen: listenInput.value,
+							token_expires: tokenInput.value,
+							data_dir: dataDirInput.value,
+							manage_conf: manageCb.checked ? '1' : '0'
+						});
+					})
+				}, [ _('Save settings') ]) ])
+			])
+	);
+};
