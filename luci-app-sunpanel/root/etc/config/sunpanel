@@ -1,0 +1,43 @@
+# /etc/config/sunpanel -- luci-app-sunpanel
+# UCI is the single source of truth for the few keys we manage.
+# They are rendered into Sun-Panel's own conf/conf.ini at service start
+# by /usr/share/sunpanel/confgen.sh (only when manage_conf = 1).
+
+config sunpanel 'sunpanel'
+	option enabled '1'
+
+	# --- Web listener ([base] http_port / https_port / http_address) ---
+	option port '3002'
+	option https_port '3003'
+	option listen '0.0.0.0'
+
+	# Login token lifetime in hours ([base] token_expires)
+	option token_expires '168'
+
+	# Sun-Panel v2 data root. Contains conf/, database/, uploads/,
+	# runtime/, custom/, micro_app/. Keep on a large partition.
+	option data_dir '/mnt/mmcblk0p1/sun-panel/data'
+
+	# Program payload root. Contains the sun-panel binary and web/.
+	# Managed by the built-in updater; also kept off the overlay.
+	option app_dir '/mnt/mmcblk0p1/sun-panel/app'
+
+	# 1 = regenerate conf/conf.ini from these options at every service
+	# start. 0 = only create it when missing, so manual edits survive.
+	option manage_conf '1'
+
+	# Release channel to follow: 'stable' (v1.8.x / future v2 stable)
+	# or 'beta' (v2.0.2-betaNNNNNNNN pre-releases)
+	option channel 'beta'
+
+	# Optional GitHub download accelerator prefix applied to release
+	# URLs, e.g. 'https://ghfast.top'. Empty = direct connection.
+	option mirror ''
+
+	# Optional HTTP(S) proxy for downloads, e.g. 'http://127.0.0.1:7890'
+	option proxy ''
+
+	# Absolute path of a legacy Sun-Panel v1 configuration directory,
+	# filled automatically by install-migrate.sh when an old install is
+	# detected. Used by the v1 compat shim until migration completes.
+	option legacy_v1_dir ''

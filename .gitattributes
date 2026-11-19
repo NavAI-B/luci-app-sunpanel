@@ -1,0 +1,12 @@
+* text=auto
+*.sh text eol=lf
+*.js text eol=lf
+*.mjs text eol=lf
+*.po text eol=lf
+*.pot text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+luci-app-sunpanel/root/usr/libexec/sunpanel-call text eol=lf
+*.lmo binary
+*.tar.gz binary
+*.png binary

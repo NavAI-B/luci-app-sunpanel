@@ -1,0 +1,393 @@
+#!/usr/bin/ucode
+// luci-app-sunpanel -- CLI dispatcher invoked by LuCI views through
+// rpcd `file exec` (fs.exec_direct). Always emits exactly one JSON line.
+//
+// Usage: sunpanel-call <action> [args...]
+
+'use strict';
+
+import { readfile, popen, lsdir, stat, access, mkdir, unlink, rename, basename } from 'fs';
+import { cursor } from 'uci';
+
+const PLUGIN_VERSION = '1.0.0';
+const GITHUB_API = 'https://api.github.com/repos/hslr-s/sun-panel/releases?per_page=30';
+const SHARE = '/usr/share/sunpanel';
+
+function sq(s) {
+	return "'" + replace(s, "'", "'\\''") + "'";
+}
+
+function sh_out(cmd) {
+	let p = popen(cmd, 'r');
+	if (!p)
+		return null;
+	let d = p.read('all');
+	p.close();
+	return (d == null) ? null : d;
+}
+
+function sh_bg(cmd) {
+	popen(sprintf('nohup %s >/dev/null 2>&1 &', sq(cmd)), 'r')?.close();
+}
+
+let _cur = null;
+function uci_get(k, def) {
+	if (_cur == null)
+		_cur = cursor();
+	let v = _cur.get('sunpanel', 'sunpanel', k);
+	return (v == null || v == '') ? def : v;
+}
+
+function app_dir() { return uci_get('app_dir', '/mnt/mmcblk0p1/sun-panel/app'); }
+function data_dir() { return uci_get('data_dir', '/mnt/mmcblk0p1/sun-panel/data'); }
+function state_dir() { return app_dir() + '/.state'; }
+function sp_port() { return uci_get('port', '3002'); }
+
+function read_kv(path) {
+	let o = {};
+	let txt = readfile(path);
+	if (txt == null)
+		return o;
+	let lines = split(trim(txt), '\n');
+	for (let i = 0; i < length(lines); i++) {
+		let line = lines[i];
+		if (line == '' || substr(line, 0, 1) == '#')
+			continue;
+		let p = split(line, '=');
+		if (length(p) >= 2)
+			o[p[0]] = join('=', slice(p, 1));
+	}
+	return o;
+}
+
+function installed_version() {
+	let v = readfile(app_dir() + '/version');
+	return (v == null) ? '' : trim(v);
+}
+
+function v2_present() {
+	return stat(app_dir() + '/sun-panel') != null;
+}
+
+function legacy_dir() {
+	let d = uci_get('legacy_v1_dir', '');
+	if (d == '')
+		return '';
+	if (substr(d, 0, 1) != '/')
+		d = '/' + d;
+	d = replace(d, /\/+$/, '');
+	let st = stat(d + '/conf.ini');
+	if (st == null || st.isdir?.() == true)
+		return '';
+	// conf.ini must be a readable file
+	return (readfile(d + '/conf.ini') != null) ? d : '';
+}
+
+function running() {
+	let p = sh_out('pidof sun-panel 2>/dev/null');
+	return (p != null && trim(p) != '');
+}
+
+function service_enabled() {
+	let p = sh_out('/etc/init.d/sunpanel enabled >/dev/null 2>&1 && echo yes || echo no');
+	return trim(p ?? 'no') == 'yes';
+}
+
+function goarch() {
+	let m = trim(sh_out('uname -m') ?? '');
+	switch (m) {
+		case 'x86_64': return 'amd64';
+		case 'aarch64': return 'arm64';
+		default:
+			if (index(m, 'armv7') >= 0) return 'armv7';
+			return m;
+	}
+}
+
+function tail_lines(path, n) {
+	let p = sh_out(sprintf('tail -n %d %s 2>/dev/null', n, sq(path)));
+	return (p == null) ? '' : trim(p);
+}
+
+function rj(o) {
+	printf('%J\n', o);
+}
+
+function err(msg) {
+	rj({ ok: false, error: msg });
+}
+
+/* ---------------- actions ---------------- */
+
+function act_ping() {
+	rj({ ok: true, pong: true, plugin_version: PLUGIN_VERSION });
+}
+
+function act_info() {
+	let app = app_dir();
+	let rel = app + '/releases';
+	let releases = [];
+	let names = lsdir(rel) ?? [];
+	for (let i = 0; i < length(names); i++) {
+		let n = names[i];
+		let st = stat(rel + '/' + n + '/sun-panel');
+		if (st == null)
+			continue;
+		push(releases, { version: n, size: st.size, mtime: st.mtime });
+	}
+	let legacy = legacy_dir();
+	let mode;
+	if (stat(state_dir() + '/force-legacy') != null && legacy != '')
+		mode = 'legacy-forced';
+	else if (v2_present())
+		mode = 'v2';
+	else if (legacy != '')
+		mode = 'legacy';
+	else
+		mode = 'none';
+
+	rj({
+		ok: true,
+		plugin_version: PLUGIN_VERSION,
+		mode: mode,
+		running: running(),
+		service_enabled: service_enabled(),
+		port: sp_port(),
+		installed_version: installed_version(),
+		app_dir: app,
+		data_dir: data_dir(),
+		releases: releases,
+		legacy: {
+			dir: legacy,
+			binary: (stat('/usr/sbin/sun-panel') != null),
+			version_file: trim(readfile('/usr/share/sunpanel/version') ?? '')
+		},
+		channel: uci_get('channel', 'beta'),
+		mirror: uci_get('mirror', ''),
+		proxy_set: uci_get('proxy', '') != '',
+		arch: goarch()
+	});
+}
+
+function act_check_update() {
+	let proxy = uci_get('proxy', '');
+	let cmd = sprintf('curl -fsS -m 25 -A %s %s %s',
+		sq('luci-app-sunpanel/' + PLUGIN_VERSION),
+		(proxy != '') ? '-x ' + sq(proxy) : '',
+		sq(GITHUB_API));
+	let out = sh_out(cmd);
+	if (out == null || trim(out) == '')
+		err('GitHub API unreachable (network, mirror or proxy issue)');
+
+	let rels;
+	try {
+		rels = json(out);
+	} catch (e) {
+		err('GitHub API response parse failed');
+	}
+	if (type(rels) != 'array')
+		err('GitHub API returned unexpected payload');
+
+	let arch = goarch();
+	let stable = null, beta = null;
+	for (let i = 0; i < length(rels); i++) {
+		let r = rels[i];
+		let tag = r.tag_name;
+		// release asset filenames lowercase the tag (V2.0.2-beta... -> v2.0.2-beta...)
+		let want = sprintf('sun-panel_%s_linux_%s.tar.gz', lc(tag), arch);
+		let asset = null;
+		for (let j = 0; j < length(r.assets); j++) {
+			if (lc(r.assets[j].name) == want) {
+				asset = r.assets[j];
+				break;
+			}
+		}
+		if (asset == null)
+			continue;
+		let e = {
+			tag: tag,
+			prerelease: (r.prerelease == true),
+			date: r.published_at,
+			url: asset.browser_download_url,
+			size: asset.size,
+			sha256: null
+		};
+		if (type(asset.digest) == 'string' && index(asset.digest, 'sha256:') == 0)
+			e.sha256 = substr(asset.digest, 7);
+		if (e.prerelease && beta == null)
+			beta = e;
+		if (!e.prerelease && stable == null)
+			stable = e;
+	}
+	rj({ ok: true, current: installed_version(), arch: arch, stable: stable, beta: beta });
+}
+
+function act_update_start() {
+	let tag = ARGV[1], url = ARGV[2], sha = ARGV[3];
+	if (tag == null || url == null)
+		err('missing tag/url');
+	mkdir(state_dir());
+	sh_bg(sprintf('sh %s/update.sh download-install %s %s %s',
+		SHARE, sq(tag), sq(url), (sha == null) ? '-' : sq(sha)));
+	rj({ ok: true, started: true });
+}
+
+function act_update_status() {
+	let st = read_kv(state_dir() + '/update.state');
+	st.ok = (st.ok != null) ? int(st.ok) : null;
+	st.log = tail_lines(state_dir() + '/update.log', 20);
+	rj({ ok: true, state: st });
+}
+
+function act_release_import() {
+	let src = ARGV[1];
+	if (src == null || stat(src) == null)
+		err('uploaded release file not found');
+	mkdir(state_dir());
+	sh_bg(sprintf('sh %s/update.sh import %s', SHARE, sq(src)));
+	rj({ ok: true, started: true });
+}
+
+function act_rollback() {
+	let ver = ARGV[1];
+	if (ver == null)
+		err('missing version');
+	mkdir(state_dir());
+	sh_bg(sprintf('sh %s/update.sh rollback %s', SHARE, sq(ver)));
+	rj({ ok: true, started: true });
+}
+
+function act_release_delete() {
+	let ver = ARGV[1];
+	if (ver == null || index(ver, '/') >= 0 || index(ver, '..') >= 0)
+		err('bad version');
+	let out = sh_out(sprintf('sh %s/update.sh delete %s 2>&1', SHARE, sq(ver)));
+	if (trim(out ?? '') == 'ok')
+		rj({ ok: true });
+	else
+		err(trim(out ?? 'delete failed'));
+}
+
+function act_conf_render() {
+	let out = sh_out(sprintf('sh %s/confgen.sh 2>&1', SHARE));
+	if (index(out ?? '', 'rendered') >= 0)
+		rj({ ok: true, out: trim(out) });
+	else
+		err(trim(out ?? 'confgen failed'));
+}
+
+function act_logs() {
+	let name = ARGV[1], n = int(ARGV[2] ?? '40');
+	if (name == 'update')
+		rj({ ok: true, log: tail_lines(state_dir() + '/update.log', n) });
+	else if (name == 'migrate')
+		rj({ ok: true, log: tail_lines(state_dir() + '/migrate.log', n) });
+	else if (name == 'service')
+		rj({ ok: true, log: trim(sh_out('logread 2>/dev/null | grep -i sun | tail -n ' + n) ?? '') });
+	else
+		err('unknown log: ' + name);
+}
+
+function act_legacy_force() {
+	let onoff = ARGV[1];
+	mkdir(state_dir());
+	if (onoff == 'on') {
+		if (legacy_dir() == '')
+			err('no legacy v1 install found');
+		let f = open(state_dir() + '/force-legacy', 'w');
+		f.write('1\n');
+		f.close();
+		sh_out('/etc/init.d/sunpanel restart >/dev/null 2>&1');
+		rj({ ok: true, mode: 'legacy-forced' });
+	} else {
+		unlink(state_dir() + '/force-legacy');
+		sh_out('/etc/init.d/sunpanel restart >/dev/null 2>&1');
+		rj({ ok: true, mode: v2_present() ? 'v2' : 'auto' });
+	}
+}
+
+function read_kv_mem(text) {
+	let o = {};
+	let lines = split(trim(text ?? ''), '\n');
+	for (let i = 0; i < length(lines); i++) {
+		let p = split(lines[i], '=');
+		if (length(p) >= 2)
+			o[p[0]] = join('=', slice(p, 1));
+	}
+	return o;
+}
+
+function read_kv_tolerate(text) {
+	let o = (text == null) ? {} : read_kv_mem(text);
+	return o;
+}
+
+function act_migrate() {
+	let step = ARGV[1];
+	let mig = SHARE + '/migrate.sh';
+	let sdir = state_dir();
+	mkdir(sdir);
+
+	switch (step) {
+		case 'detect':
+			rj({ ok: true, detect: read_kv_tolerate(sh_out('sh ' + mig + ' detect 2>/dev/null')) });
+			break;
+
+		case 'store-backup': {
+			let src = ARGV[2];
+			if (src == null || stat(src) == null)
+				err('uploaded backup not found');
+			let mdir = data_dir() + '/../migration';
+			mkdir(mdir);
+			let dst = mdir + '/v1-backup.zip';
+			rename(src, dst);
+			rj({ ok: true, stored: dst, size: stat(dst)?.size });
+			break;
+		}
+
+		case 'deploy':
+		case 'switch':
+		case 'finish':
+		case 'abort':
+			sh_bg(sprintf('sh %s %s >> %s/migrate.log 2>&1', mig, sq(step), sq(sdir)));
+			rj({ ok: true, started: step });
+			break;
+
+		case 'status': {
+			let st = read_kv(sdir + '/migrate.state');
+			st.log = tail_lines(sdir + '/migrate.log', 15);
+			rj({ ok: true, state: st });
+			break;
+		}
+
+		case 'reset':
+			unlink(sdir + '/migrate.state');
+			rj({ ok: true });
+			break;
+
+		default:
+			err('unknown migrate step: ' + step);
+	}
+}
+
+/* ---------------- main ---------------- */
+
+let action = ARGV[0] ?? '';
+
+switch (action) {
+	case 'ping':            act_ping(); break;
+	case 'info':            act_info(); break;
+	case 'check-update':    act_check_update(); break;
+	case 'update-start':    act_update_start(); break;
+	case 'update-status':   act_update_status(); break;
+	case 'release-import':  act_release_import(); break;
+	case 'releases':        act_info(); break;
+	case 'rollback':        act_rollback(); break;
+	case 'release-delete':  act_release_delete(); break;
+	case 'conf-render':     act_conf_render(); break;
+	case 'logs':            act_logs(); break;
+	case 'legacy-force':    act_legacy_force(); break;
+	case 'migrate':         act_migrate(); break;
+	default:
+		err('unknown action: ' + action);
+}

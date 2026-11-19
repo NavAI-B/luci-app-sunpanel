@@ -1,0 +1,26 @@
+{
+	"luci-app-sunpanel": {
+		"description": "Grant access to Sun-Panel service management",
+		"read": {
+			"cgi-io": [ "exec" ],
+			"ubus": {
+				"luci": [ "getInitList", "getInitConfigs" ]
+			},
+			"file": {
+				"/etc/config/sunpanel": [ "read" ]
+			},
+			"uci": [ "sunpanel" ]
+		},
+		"write": {
+			"ubus": {
+				"luci": [ "setInitAction" ]
+			},
+			"file": {
+				"/usr/libexec/sunpanel-call *": [ "exec" ],
+				"/usr/libexec/sunpanel-call": [ "exec" ],
+				"/tmp/sunpanel-upload/*": [ "write" ]
+			},
+			"uci": [ "sunpanel" ]
+		}
+	}
+}

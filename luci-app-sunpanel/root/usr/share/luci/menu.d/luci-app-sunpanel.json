@@ -1,0 +1,14 @@
+{
+	"admin/services/sunpanel": {
+		"title": "Sun-Panel",
+		"order": 60,
+		"action": {
+			"type": "view",
+			"path": "sunpanel"
+		},
+		"depends": {
+			"acl": [ "luci-app-sunpanel" ],
+			"fs": [ "/usr/libexec/sunpanel-call" ]
+		}
+	}
+}

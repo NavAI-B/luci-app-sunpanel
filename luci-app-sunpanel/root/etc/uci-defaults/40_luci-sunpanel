@@ -1,0 +1,4 @@
+#!/bin/sh
+# luci-app-sunpanel uci-defaults -- runs once at first boot after install
+sh /usr/share/sunpanel/install-migrate.sh || :
+exit 0

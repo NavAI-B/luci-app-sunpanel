@@ -1,0 +1,8 @@
+downloads/
+dist/
+lmo_base.bin
+lmo_base.po
+po_pairs.txt
+po_strings.txt
+*.log
+.mnemon/
