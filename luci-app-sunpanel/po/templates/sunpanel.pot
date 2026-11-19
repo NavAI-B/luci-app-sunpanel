@@ -26,33 +26,6 @@ msgstr ""
 msgid "Failed"
 msgstr ""
 
-msgid "Deploying v2 test instance"
-msgstr ""
-
-msgid "v2 test instance running, import the backup in the v2 UI now"
-msgstr ""
-
-msgid "Test instance verified"
-msgstr ""
-
-msgid "v2 switched to the primary instance"
-msgstr ""
-
-msgid "Deployment failed"
-msgstr ""
-
-msgid "Verification failed"
-msgstr ""
-
-msgid "Switch failed"
-msgstr ""
-
-msgid "Aborted, v1 is serving again"
-msgstr ""
-
-msgid "Migration complete"
-msgstr ""
-
 msgid "Service status"
 msgstr ""
 
@@ -60,9 +33,6 @@ msgid "Basic settings"
 msgstr ""
 
 msgid "Version manager"
-msgstr ""
-
-msgid "v1 migration wizard"
 msgstr ""
 
 msgid "Loading…"
@@ -74,22 +44,16 @@ msgstr ""
 msgid "(empty)"
 msgstr ""
 
-msgid "Refresh service log"
-msgstr ""
-
 msgid "Service log"
 msgstr ""
 
-msgid "Migration follows the officially recommended path: export a v1 backup, deploy a fresh v2 test instance, import the backup in the v2 UI, then switch to the production port after verification. The v1 data directory stays read-only throughout."
+msgid "Refresh service log"
 msgstr ""
 
 msgid "v2 running"
 msgstr ""
 
-msgid "v1 compat mode (pending migration)"
-msgstr ""
-
-msgid "v1 forced mode (emergency fallback)"
+msgid "v1 compat mode (v2 not installed yet)"
 msgstr ""
 
 msgid "Not installed"
@@ -128,6 +92,15 @@ msgstr ""
 msgid "Data directory"
 msgstr ""
 
+msgid "Start"
+msgstr ""
+
+msgid "Stop"
+msgstr ""
+
+msgid "Restart"
+msgstr ""
+
 msgid "Sun-Panel basic configuration"
 msgstr ""
 
@@ -135,6 +108,9 @@ msgid "Global settings"
 msgstr ""
 
 msgid "Enable service"
+msgstr ""
+
+msgid "v1 compat mode: network settings follow the old configuration and will take effect after v2 is installed."
 msgstr ""
 
 msgid "HTTP port"
@@ -188,9 +164,6 @@ msgstr ""
 msgid "Empty to disable, e.g. http://127.0.0.1:7890"
 msgstr ""
 
-msgid "After Save & Apply a service restart is required for port changes to take effect."
-msgstr ""
-
 msgid "Restart service"
 msgstr ""
 
@@ -203,22 +176,19 @@ msgstr ""
 msgid "Operation failed: %s"
 msgstr ""
 
-msgid "Check for updates"
-msgstr ""
-
-msgid "Current version: %s"
+msgid "Installed version: %s"
 msgstr ""
 
 msgid "Architecture: %s"
 msgstr ""
 
-msgid "Channel: %s"
+msgid "Stable (v1.x line)"
 msgstr ""
 
-msgid "Beta"
+msgid "Beta (v2 line)"
 msgstr ""
 
-msgid "Stable"
+msgid "Check for updates"
 msgstr ""
 
 msgid "Check failed: %s"
@@ -242,13 +212,13 @@ msgstr ""
 msgid "Locally kept versions"
 msgstr ""
 
-msgid "Stable channel"
+msgid "Update channel switched, checking…"
 msgstr ""
 
-msgid "Beta channel"
+msgid "No release available in this channel"
 msgstr ""
 
-msgid "No release available"
+msgid "No stable v2 release exists yet; stable channel currently tracks v1.8.x."
 msgstr ""
 
 msgid "Current version"
@@ -311,9 +281,6 @@ msgstr ""
 msgid "No stored versions"
 msgstr ""
 
-msgid "current"
-msgstr ""
-
 msgid "Roll back to this version"
 msgstr ""
 
@@ -342,104 +309,5 @@ msgid "Rollback failed: %s"
 msgstr ""
 
 msgid "Roll back"
-msgstr ""
-
-msgid "Detect v1"
-msgstr ""
-
-msgid "Upload backup"
-msgstr ""
-
-msgid "Deploy v2 test instance"
-msgstr ""
-
-msgid "Import and verify"
-msgstr ""
-
-msgid "Switch port"
-msgstr ""
-
-msgid "Finish and clean up"
-msgstr ""
-
-msgid "Detect legacy v1"
-msgstr ""
-
-msgid "Upload failed: %s"
-msgstr ""
-
-msgid "Upload v1 backup (zip)"
-msgstr ""
-
-msgid "Deployment job started"
-msgstr ""
-
-msgid "Deployment failed: %s"
-msgstr ""
-
-msgid "Deploy v2 test instance (port 3004)"
-msgstr ""
-
-msgid "Verify test instance"
-msgstr ""
-
-msgid "Switch job started"
-msgstr ""
-
-msgid "Switch failed: %s"
-msgstr ""
-
-msgid "Switch to production port"
-msgstr ""
-
-msgid "Finish (archive v1)"
-msgstr ""
-
-msgid "Abort and restore v1"
-msgstr ""
-
-msgid "Deploying, please wait…"
-msgstr ""
-
-msgid "Migration complete. The legacy v1 has been archived; see the version manager."
-msgstr ""
-
-msgid "Detected legacy v1"
-msgstr ""
-
-msgid "Port"
-msgstr ""
-
-msgid "Backup archive"
-msgstr ""
-
-msgid "Uploaded"
-msgstr ""
-
-msgid "Not uploaded"
-msgstr ""
-
-msgid "Please open "
-msgstr ""
-
-msgid ", sign in to the fresh v2 with the default account admin@sun.cc / 12345678, then import the uploaded v1 backup under \"System Settings → Backup & Restore\". After verifying the content, return here and click \"Verify test instance\"."
-msgstr ""
-
-msgid "Emergency actions"
-msgstr ""
-
-msgid "To temporarily fall back to v1 when v2 misbehaves (only while v1 has not been cleaned up):"
-msgstr ""
-
-msgid "Switched to v1 compat mode"
-msgstr ""
-
-msgid "Force back to v1"
-msgstr ""
-
-msgid "v1 forced mode disabled"
-msgstr ""
-
-msgid "Disable v1 forced mode"
 msgstr ""
 

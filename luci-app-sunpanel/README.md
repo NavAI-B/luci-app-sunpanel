@@ -10,22 +10,31 @@
 
 ## 功能
 
+三个标签页，按需自适应：
+
 | 标签页 | 内容 |
 |---|---|
 | 服务状态 | 运行状态/模式、启停重启、打开面板入口、服务日志 |
-| 基础设置 | 端口/监听地址/token 有效期、数据目录与程序目录、conf.ini 托管开关、更新通道、镜像/代理 |
-| 版本管理 | GitHub 双通道检查（stable / beta）、按架构自动选包（本机 musl aarch64 → `linux_arm64`）、下载→SHA256 校验→原子切换→健康检查→**失败自动回滚**、本地版本回滚/清理、离线安装 release 包 |
-| v1 迁移向导 | 检测旧版 v1 → 上传备份包 → 部署 v2 试运行（临时端口 3004）→ v2 界面导入备份 → 验证 → 切换正式端口 → 归档清理 v1 |
+| 基础设置 | 按运行分支自适应：v2 模式下展示端口/监听地址/token 有效期/conf.ini 托管开关等；v1 兼容模式下网络设置标注不生效，仅保留通道、镜像/代理、目录等有效项 |
+| 版本管理 | 按更新通道单卡片展示（稳定=v1.x 线 / 测试=v2 线，切换即查）、按架构自动选包、下载→SHA256 校验→原子切换→健康检查→**失败自动回滚**、本地版本回滚/清理、离线安装 release 包 |
 
 ### 设计要点
 
-- **overlay 友好**：apk 包（或直拷贝）只装骨架；二进制与 web 前端由版本管理器下载到数据分区（默认
+- **overlay 友好**：apk 包只装骨架；二进制与 web 前端由版本管理器下载到数据分区（默认
   `/mnt/mmcblk0p1/sun-panel/app`），系统分区不再被大文件与版本迭代挤爆。
-- **v1 兼容垫片**：v2 未安装时，init 脚本自动沿用旧 v1 二进制与配置继续服务，迁移期间面板不掉线。
-- **数据零风险**：迁移全程不写 v1 数据目录；v2 使用全新数据目录，导入备份成功并验证后才切换。
+- **v1 兼容垫片**：v2 未安装时，init 脚本自动沿用旧 v1 二进制与配置继续服务，装 v2 期间面板不掉线。
+- **数据零风险**：v2 使用全新数据目录；v1 数据目录全程只读，确认 v2 正常后可自行删除。
 - **conf.ini 托管**：UCI 为唯一配置源，启动时按 v2 实测格式渲染（含 v2 新增 `micro_app_path`）；
   `manage_conf=0` 时只生成一次，保留手工修改。
 - **网络不友好环境**：支持 GitHub 加速前缀（镜像）与 HTTP 代理两种下载加速方式，另可离线安装。
+
+### v1 → v2 迁移（手动，两分钟）
+
+1. 打开旧 v1 面板（系统设置 → 备份恢复），导出备份 zip 到本机
+2. LuCI 版本管理 → 通道切到「测试版」→ 安装最新 v2（服务自动切换，端口沿用 3002）
+3. 打开 v2 面板（默认账号 `admin@sun.cc` / `12345678`），在其「系统设置 → 备份恢复」导入备份 zip
+4. 确认内容无误后，可自行删除旧 v1 残留：`/usr/sbin/sun-panel`、`/usr/share/sunpanel/`（web 残留）
+   与旧数据目录（如 `/mnt/mmcblk0p1/Configs/SunPanel`，确认无需回滚再删）
 
 ## 安装（apk 包，LuCI 软件包界面上传）
 
@@ -75,26 +84,12 @@ curl -LO https://mirror.nju.edu.cn/immortalwrt/snapshots/targets/rockchip/armv8/
 `po/zh_Hans/sunpanel.po` 承载中文翻译——这是上游 luci 应用的标准形态；
 `tools/gen_po.mjs` 负责维护这套映射（`rewrite` 模式把 JS 源串切换为英文）。
 
-## 迁移向导（v1 → v2）
-
-1. **检测旧版 v1**：从安装时记录的 `legacy_v1_dir` 读取旧版信息。
-2. **上传备份包**：先在旧 v1 网页（系统设置 → 备份恢复）导出备份 zip，再到本页上传。
-3. **部署 v2 试运行**：需先在「版本管理」安装 v2（beta 通道）。向导以全新数据目录、
-   临时端口 3004 启动 v2。
-4. **导入备份**：打开 `http://<路由器IP>:3004/`，用默认账号 `admin@sun.cc` / `12345678` 登录，
-   在 v2 界面导入刚上传的备份包（此步在 v2 网页完成，插件不经手面板凭证）。
-5. **验证**：确认内容无误后点击验证。
-6. **切换正式端口**：v2 回到 3002/3003 正式接管。
-7. **完成清理**：归档旧 v1 二进制、清除旧插件残留（旧 v1 数据目录不动，确认无误后可自行删除）。
-
-应急：迁移过程中或 v2 异常时，可一键「强制回到 v1」（仅限 v1 尚未清理时）。
-
 ## 目录结构
 
 ```
 luci-app-sunpanel/
 ├── Makefile                       # luci feed 包定义（luci.mk，自动产出 i18n 子包）
-├── htdocs/.../view/sunpanel.js    # LuCI 页面（状态/设置/版本/迁移 四标签）
+├── htdocs/.../view/sunpanel.js    # LuCI 页面（状态/设置/版本 三标签）
 ├── root/
 │   ├── etc/config/sunpanel        # UCI 默认配置
 │   ├── etc/init.d/sunpanel        # procd 服务（v2 / v1 垫片双模式）
@@ -102,14 +97,13 @@ luci-app-sunpanel/
 │   ├── usr/libexec/sunpanel-call  # ucode 分发器（LuCI 后端）
 │   ├── usr/share/luci/menu.d/…json
 │   ├── usr/share/rpcd/acl.d/…json
-│   └── usr/share/sunpanel/        # common.sh / confgen.sh / update.sh /
-│                                  # migrate.sh / install-migrate.sh
+│   └── usr/share/sunpanel/        # common.sh / confgen.sh / update.sh / install-migrate.sh
 ├── po/ (templates, zh_Hans)       # 翻译源（英文源串 + 中文翻译）
 └── tools/                         # gen_po.mjs（i18n 维护）/ WSL SDK 构建脚本
 ```
 
 产物（`bin/packages/aarch64_generic/luci/`）：
-`luci-app-sunpanel-1.0.0-r1.apk`、`luci-i18n-sunpanel-zh-cn-1.0.0.apk`、
+`luci-app-sunpanel-1.0.0-r4.apk`、`luci-i18n-sunpanel-zh-cn-1.0.0.apk`、
 签名公钥 `public-key.pem`（即 `dist/sunpanel-local.pub.pem`）。
 
 ## 故障排查
@@ -120,14 +114,15 @@ luci-app-sunpanel/
   「下载代理」（如路由器 clash 的 `http://127.0.0.1:7890`）；也可走离线安装。
 - **服务无法启动**：服务状态页查看日志；常见原因是数据目录所在分区未挂载。
 - **更新失败自动回滚**：版本管理页会显示失败原因与新版本健康检查日志。
-- **回到 v1**：迁移向导「应急操作 → 强制回到 v1」。
+- **升级插件后页面异常**：LuCI 会话内缓存视图模块，强刷（Ctrl+Shift+R）或退出重登即可。
+- **回到 v1**：只要未删除 `/usr/sbin/sun-panel` 与旧数据目录，卸载新 apk
+  （`apk del luci-app-sunpanel`，旧配置备份在 `/etc/config/sunpanel.v1bak`）并恢复旧 init 即可；
+  正常情况用不到。
 
 ## 已知边界与注意事项
 
 - v2 目前（2.0.2-beta*）为官方 beta/开发版，官方明确提示勿直接用于正式环境；请保持备份习惯
   （v2 界面同样支持导出备份）。
 - v2 全新安装默认密码为 `admin@sun.cc / 12345678`，导入迁移完成后请及时修改。
-- 成品包为直拷贝安装（ImmortalWrt apk-tools 3.0.2 暂无 mkpkg 自打包能力），文件不受 apk 跟踪，
-  由 uninstall.sh 负责清理；SDK 构建的 apk 包则完全纳入包管理。
 - 旧 v1 数据目录（如 `/mnt/mmcblk0p1/Configs/SunPanel`）迁移完成后仍会保留，确认 v2 一切正常后
   再手动删除。

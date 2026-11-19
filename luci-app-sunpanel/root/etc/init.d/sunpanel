@@ -7,7 +7,7 @@
 #                    <data_dir>/conf (rendered by confgen.sh if managed).
 #   2. legacy mode : v2 binary missing but a legacy v1 install exists
 #                    (/usr/sbin/sun-panel + legacy_v1_dir) -> keep serving
-#                    v1 untouched until the migration wizard finishes.
+#                    v1 untouched until v2 is installed and set up.
 #   3. not installed: log a hint and fail; install via LuCI version page.
 
 START=99
@@ -35,12 +35,9 @@ start_service() {
 	config_get manage_conf sunpanel manage_conf 1
 
 	# Force-legacy escape hatch (rollback path created by dispatcher)
-	legacy_run=0
-	[ -n "$app_dir" ] && [ -f "$app_dir/.state/force-legacy" ] && legacy_run=1
-
 	bin="$app_dir/sun-panel"
 
-	if [ "$legacy_run" != "1" ] && [ -x "$bin" ] && [ -n "$data_dir" ]; then
+	if [ -x "$bin" ] && [ -n "$data_dir" ]; then
 		# ---------------- v2 mode ----------------
 		mkdir -p "$data_dir/conf" "$data_dir/database" "$data_dir/uploads" \
 			"$data_dir/runtime/temp" "$data_dir/custom" "$data_dir/micro_app" \
@@ -64,9 +61,7 @@ start_service() {
 	else
 		# ---------------- legacy v1 shim ----------------
 		legacy_dir="$(sp_legacy_dir)"
-		if [ "$legacy_run" = "1" ]; then
-			sp_log "force-legacy marker active"
-		elif [ ! -x "$bin" ]; then
+		if [ ! -x "$bin" ]; then
 			sp_log "v2 binary not installed yet"
 		else
 			sp_log "v2 present but data_dir empty; refusing v2 start"

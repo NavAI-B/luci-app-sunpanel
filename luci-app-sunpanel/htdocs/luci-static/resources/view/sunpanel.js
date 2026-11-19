@@ -7,13 +7,6 @@
 'require poll';
 'require form';
 
-var callGetInitList = rpc.declare({
-	object: 'luci',
-	method: 'getInitList',
-	params: [ 'name' ],
-	expect: { '': {} }
-});
-
 var callSetInit = rpc.declare({
 	object: 'luci',
 	method: 'setInitAction',
@@ -25,11 +18,11 @@ var DISPATCH = '/usr/libexec/sunpanel-call';
 
 function disp(action, args) {
 	return fs.exec_direct(DISPATCH, [ action ].concat(args || []), 'json')
-		.then(L.bind(function(res) {
+		.then(function(res) {
 			if (!res || res.ok === false)
 				return Promise.reject((res && res.error) ? res.error : _('Dispatcher call failed'));
 			return res;
-		}, this));
+		});
 }
 
 function fmtSize(sz) {
@@ -49,16 +42,7 @@ function phaseText(phase) {
 		extract: _('Extracting'),
 		switch: _('Switching version'),
 		done: _('Done'),
-		failed: _('Failed'),
-		deploying: _('Deploying v2 test instance'),
-		deployed: _('v2 test instance running, import the backup in the v2 UI now'),
-		'verified': _('Test instance verified'),
-		switched: _('v2 switched to the primary instance'),
-		'deploy-failed': _('Deployment failed'),
-		'verify-failed': _('Verification failed'),
-		'switch-failed': _('Switch failed'),
-		aborted: _('Aborted, v1 is serving again'),
-		'done-mig': _('Migration complete')
+		failed: _('Failed')
 	};
 	return map[phase] || phase || '-';
 }
@@ -80,12 +64,10 @@ function kvTable(rows) {
 
 return view.extend({
 	_jobActive: false,
-	_migratePolling: false,
 
 	load: function() {
 		return Promise.all([
 			disp('info'),
-			disp('migrate', [ 'status' ]),
 			uci.load('sunpanel')
 		]);
 	},
@@ -93,16 +75,13 @@ return view.extend({
 	render: function(data) {
 		var self = this;
 		var info = data[0];
-		var migState = data[1].state;
 
 		var container = E('div', { 'class': 'cbi-map' });
 
-		/* ---------- tabs ---------- */
 		var tabStatus = E('div', { 'data-tab': 'status', 'data-tab-title': _('Service status') });
 		var tabSettings = E('div', { 'data-tab': 'settings', 'data-tab-title': _('Basic settings') });
 		var tabVersion = E('div', { 'data-tab': 'version', 'data-tab-title': _('Version manager') });
-		var tabMigrate = E('div', { 'data-tab': 'migrate', 'data-tab-title': _('v1 migration wizard') });
-		var tabs = E('div', {}, [ tabStatus, tabSettings, tabVersion, tabMigrate ]);
+		var tabs = E('div', {}, [ tabStatus, tabSettings, tabVersion ]);
 		container.appendChild(tabs);
 
 		/* ================= status tab ================= */
@@ -113,37 +92,25 @@ return view.extend({
 		]));
 
 		var logBox = E('pre', { 'class': 'ucli', 'style': 'max-height:300px; overflow:auto' }, [ _('(empty)') ]);
-		var logBtn = E('button', {
-			'class': 'btn cbi-button',
-			'click': ui.createHandlerFn(this, function() {
-				return disp('logs', [ 'service', '60' ]).then(function(res) {
-					logBox.textContent = res.log || _('(empty)');
-				}).catch(function(e) { ui.addNotification(null, E('p', {}, [ e ])); });
-			})
-		}, [ _('Refresh service log') ]);
 		tabStatus.appendChild(E('div', { 'class': 'cbi-section' }, [
 			E('div', { 'class': 'cbi-section-title' }, [ _('Service log') ]),
-			logBtn,
+			E('button', {
+				'class': 'btn cbi-button',
+				'click': ui.createHandlerFn(this, function() {
+					return disp('logs', [ 'service', '60' ]).then(function(res) {
+						logBox.textContent = res.log || _('(empty)');
+					}).catch(function(e) { ui.addNotification(null, E('p', {}, [ e ])); });
+				})
+			}, [ _('Refresh service log') ]),
 			E('div', { 'style': 'margin-top:.5em' }, [ logBox ])
 		]));
 
 		this.renderStatusBox(statusBox, info);
 
-		/* ================= settings tab ================= */
-		// content is appended asynchronously below (form.Map#render returns a Promise)
-
 		/* ================= version tab ================= */
 		var versionBox = E('div', {});
 		tabVersion.appendChild(versionBox);
 		this.renderVersionTab(versionBox, info);
-
-		/* ================= migrate tab ================= */
-		var migrateBox = E('div', {});
-		tabMigrate.appendChild(E('div', { 'class': 'alert alert-info' }, [
-			E('p', {}, [ _('Migration follows the officially recommended path: export a v1 backup, deploy a fresh v2 test instance, import the backup in the v2 UI, then switch to the production port after verification. The v1 data directory stays read-only throughout.') ])
-		]));
-		tabMigrate.appendChild(migrateBox);
-		this.renderMigrateTab(migrateBox, info, migState);
 
 		/* ---------- polling ---------- */
 		poll.add(L.bind(function() {
@@ -153,20 +120,15 @@ return view.extend({
 		}, this), 5);
 
 		poll.add(L.bind(function() {
-			if (!self._jobActive && !self._migratePolling)
+			if (!self._jobActive)
 				return Promise.resolve();
-			return Promise.all([
-				disp('update-status'),
-				disp('migrate', [ 'status' ])
-			]).then(function(res) {
-				self.renderUpdateStatus(versionBox, res[0].state);
-				if (self._migratePolling)
-					self.renderMigrateTab(migrateBox, res[0], res[1].state);
+			return disp('update-status').then(function(res) {
+				self.renderUpdateStatus(versionBox.querySelector('[data-update-progress]'), res.state);
 			}).catch(function() {});
 		}, this), 3);
 
 		// settings tab: form.Map#render is asynchronous; init tabs once present
-		return this.buildSettings().then(function(settingsNode) {
+		return this.buildSettings(info).then(function(settingsNode) {
 			tabSettings.appendChild(settingsNode);
 			ui.tabs.initTabGroup(tabs.childNodes);
 			return container;
@@ -176,8 +138,7 @@ return view.extend({
 	renderStatusBox: function(box, info) {
 		var modeText = {
 			v2: _('v2 running'),
-			legacy: _('v1 compat mode (pending migration)'),
-			'legacy-forced': _('v1 forced mode (emergency fallback)'),
+			legacy: _('v1 compat mode (v2 not installed yet)'),
 			none: _('Not installed')
 		};
 		var openLink = E('a', {
@@ -188,7 +149,7 @@ return view.extend({
 		}, [ _('Open panel') ]);
 
 		var rows = [
-			[ _('Status'), (info.running ? badge(_('Running'), 'label-success') : badge(_('Stopped'), 'label-danger')) ],
+			[ _('Running'), (info.running ? badge(_('Running'), 'label-success') : badge(_('Stopped'), 'label-danger')) ],
 			[ _('Mode'), modeText[info.mode] || info.mode ],
 			[ _('Installed version'), info.installed_version || '-' ],
 			[ _('Listen port'), info.port ],
@@ -199,10 +160,30 @@ return view.extend({
 		];
 		box.innerHTML = '';
 		box.appendChild(kvTable(rows));
+
+		var ctrl = E('div', { 'style': 'margin-top:.8em' }, [
+			E('button', {
+				'class': 'btn cbi-button',
+				'click': ui.createHandlerFn(this, function() { return callSetInit('sunpanel', 'start'); })
+			}, [ _('Start') ]),
+			' ',
+			E('button', {
+				'class': 'btn cbi-button',
+				'click': ui.createHandlerFn(this, function() { return callSetInit('sunpanel', 'stop'); })
+			}, [ _('Stop') ]),
+			' ',
+			E('button', {
+				'class': 'btn cbi-button cbi-button-negative',
+				'click': ui.createHandlerFn(this, function() { return callSetInit('sunpanel', 'restart'); })
+			}, [ _('Restart') ])
+		]);
+		box.appendChild(ctrl);
 	},
 
-	buildSettings: function() {
+	buildSettings: function(info) {
+		var self = this;
 		var m, s, o;
+		var isLegacy = (info.mode == 'legacy');
 
 		m = new form.Map('sunpanel', _('Sun-Panel basic configuration'));
 
@@ -213,19 +194,24 @@ return view.extend({
 		o.default = o.enabled;
 		o.rmempty = false;
 
-		o = s.option(form.Value, 'port', _('HTTP port'));
-		o.datatype = 'port';
-		o.rmempty = false;
+		if (isLegacy) {
+			o = s.option(form.DummyValue, '_legacyhint', _('v1 compat mode: network settings follow the old configuration and will take effect after v2 is installed.'));
+		}
+		else {
+			o = s.option(form.Value, 'port', _('HTTP port'));
+			o.datatype = 'port';
+			o.rmempty = false;
 
-		o = s.option(form.Value, 'https_port', _('HTTPS port'));
-		o.datatype = 'port';
+			o = s.option(form.Value, 'https_port', _('HTTPS port'));
+			o.datatype = 'port';
 
-		o = s.option(form.Value, 'listen', _('Listen address'));
-		o.datatype = 'ipaddr';
-		o.placeholder = '0.0.0.0';
+			o = s.option(form.Value, 'listen', _('Listen address'));
+			o.datatype = 'ipaddr';
+			o.placeholder = '0.0.0.0';
 
-		o = s.option(form.Value, 'token_expires', _('Token lifetime (hours)'));
-		o.datatype = 'uinteger';
+			o = s.option(form.Value, 'token_expires', _('Token lifetime (hours)'));
+			o.datatype = 'uinteger';
+		}
 
 		o = s.option(form.Value, 'data_dir', _('Data directory'));
 		o.rmempty = false;
@@ -235,9 +221,11 @@ return view.extend({
 		o.rmempty = false;
 		o.description = _('Directory holding the sun-panel binary and web assets, managed by the version manager');
 
-		o = s.option(form.Flag, 'manage_conf', _('Manage conf.ini from LuCI'));
-		o.default = o.enabled;
-		o.description = _('When enabled, conf/conf.ini is regenerated from these options at every service start; when disabled it is only created once and manual edits survive');
+		if (!isLegacy) {
+			o = s.option(form.Flag, 'manage_conf', _('Manage conf.ini from LuCI'));
+			o.default = o.enabled;
+			o.description = _('When enabled, conf/conf.ini is regenerated from these options at every service start; when disabled it is only created once and manual edits survive');
+		}
 
 		o = s.option(form.ListValue, 'channel', _('Update channel'));
 		o.value('stable', _('Stable (official releases)'));
@@ -251,25 +239,16 @@ return view.extend({
 		o = s.option(form.Value, 'proxy', _('Download proxy'));
 		o.placeholder = _('Empty to disable, e.g. http://127.0.0.1:7890');
 
-		o = s.option(form.DummyValue, '_applyhint', ' ');
-		o.cfgvalue = function() {
-			return E('em', {}, _('After Save & Apply a service restart is required for port changes to take effect.'));
-		};
-
-		var self = this;
 		return m.render().then(function(mapNode) {
-			var wrap = E('div', {}, [
+			return E('div', {}, [
 				mapNode,
 				E('div', { 'class': 'cbi-page-actions' }, [
 					E('button', {
 						'class': 'btn cbi-button cbi-button-negative',
-						'click': ui.createHandlerFn(self, function(ev) {
-							return self.restartService(ev);
-						})
+						'click': ui.createHandlerFn(self, function(ev) { return self.restartService(ev); })
 					}, [ _('Restart service') ])
 				])
 			]);
-			return wrap;
 		});
 	},
 
@@ -287,26 +266,44 @@ return view.extend({
 
 	renderVersionTab: function(box, info) {
 		var self = this;
-		var checkResult = E('div', {});
-		var progress = E('div', {});
-		var localReleases = E('div', {});
+		box.innerHTML = '';
 
+		var channel = info.channel || 'beta';
+
+		/* ---------- channel switcher ---------- */
+		var chRow = E('div', { 'class': 'cbi-section' }, [
+			E('div', { 'class': 'cbi-section-title' }, [ _('Update channel') ]),
+			E('p', {}, [
+				_('Installed version: %s').format(info.installed_version || _('Not installed')),
+				'　',
+				_('Architecture: %s').format(info.arch)
+			])
+		]);
+		var mkChBtn = function(val, label) {
+			var active = (channel == val);
+			var attrs = { 'class': active ? 'btn cbi-button cbi-button-action' : 'btn cbi-button' };
+			if (!active)
+				attrs.click = ui.createHandlerFn(self, function(ev, v) { return self.switchChannel(box, v); }, val);
+			return E('button', attrs, [ label ]);
+		};
+		chRow.appendChild(E('div', {}, [
+			mkChBtn('stable', _('Stable (v1.x line)')),
+			' ',
+			mkChBtn('beta', _('Beta (v2 line)'))
+		]));
+		box.appendChild(chRow);
+
+		/* ---------- check & install ---------- */
+		var checkResult = E('div', {});
 		box.appendChild(E('div', { 'class': 'cbi-section' }, [
 			E('div', { 'class': 'cbi-section-title' }, [ _('Check for updates') ]),
-			E('p', {}, [
-				_('Current version: %s').format(info.installed_version || _('Not installed')),
-				' ',
-				_('Architecture: %s').format(info.arch),
-				' ',
-				_('Channel: %s').format(info.channel == 'beta' ? _('Beta') : _('Stable'))
-			]),
 			E('button', {
 				'class': 'btn cbi-button cbi-button-action',
 				'click': ui.createHandlerFn(self, function(ev) {
 					ev.target.disabled = true;
 					checkResult.innerHTML = '';
 					return disp('check-update').then(function(res) {
-						self.showCheckResult(checkResult, res);
+						self.showCheckResult(checkResult, res, channel);
 					}).catch(function(e) {
 						ui.addNotification(null, E('p', {}, [ _('Check failed: %s').format(e) ]));
 					}).finally(function() {
@@ -317,68 +314,81 @@ return view.extend({
 			E('div', { 'style': 'margin-top:.8em' }, [ checkResult ])
 		]));
 
+		/* ---------- offline install ---------- */
 		box.appendChild(E('div', { 'class': 'cbi-section' }, [
 			E('div', { 'class': 'cbi-section-title' }, [ _('Offline install') ]),
 			E('p', {}, [ _('Upload an official release tarball from this computer (sun-panel_vX_linux_arm64.tar.gz), useful when GitHub is unreachable.') ]),
 			E('button', {
 				'class': 'btn cbi-button',
-				'click': ui.createHandlerFn(self, function(ev) {
-					return self.uploadAndInstall(ev);
-				})
+				'click': ui.createHandlerFn(self, function(ev) { return self.uploadAndInstall(ev); })
 			}, [ _('Upload and install release tarball') ])
 		]));
 
+		/* ---------- progress ---------- */
+		var progress = E('div', { 'data-update-progress': '1' }, []);
 		box.appendChild(E('div', { 'class': 'cbi-section' }, [
 			E('div', { 'class': 'cbi-section-title' }, [ _('Update progress') ]),
 			progress
 		]));
+		this.renderUpdateStatus(progress, null);
 
+		/* ---------- local releases ---------- */
+		var localReleases = E('div', {});
 		box.appendChild(E('div', { 'class': 'cbi-section' }, [
 			E('div', { 'class': 'cbi-section-title' }, [ _('Locally kept versions') ]),
 			localReleases
 		]));
-
 		this.renderLocalReleases(localReleases, info);
-		this.renderUpdateStatus(progress, null);
 	},
 
-	showCheckResult: function(box, res) {
+	switchChannel: function(box, v) {
+		var self = this;
+		uci.set('sunpanel', 'sunpanel', 'channel', v);
+		return uci.save().then(function() {
+			return uci.apply(10);
+		}).then(function() {
+			return disp('info');
+		}).then(function(inf) {
+			self.renderVersionTab(box, inf);
+			ui.addTimeLimitedNotification(null, E('p', {}, [ _('Update channel switched, checking…') ]), 3000);
+		}).catch(function(e) {
+			ui.addNotification(null, E('p', {}, [ _('Operation failed: %s').format(e) ]));
+		});
+	},
+
+	showCheckResult: function(box, res, channel) {
 		var self = this;
 		box.innerHTML = '';
 
-		var cards = [ res.stable, res.beta ];
-		var titles = [ _('Stable channel'), _('Beta channel') ];
-
-		for (var i = 0; i < cards.length; i++) {
-			var r = cards[i];
-			if (!r) {
-				box.appendChild(E('p', {}, [ '%s：%s'.format(titles[i], _('No release available')) ]));
-				continue;
-			}
-			var isCurrent = (r.tag == res.current);
-			var btnAttrs = { 'class': 'btn cbi-button cbi-button-action' };
-			if (isCurrent)
-				btnAttrs.disabled = 'disabled';
-			else
-				btnAttrs.click = ui.createHandlerFn(self, function(tag, url, sha, ev) {
-					self.confirmInstall(tag, url, sha);
-				}, r.tag, r.url, r.sha256);
-			var btn = E('button', btnAttrs, [ isCurrent ? _('Current version') : _('Install this version') ]);
-
-			box.appendChild(E('div', { 'class': 'cbi-section', 'style': 'border:1px solid var(--border-color); border-radius:4px; padding:.6em; margin-bottom:.6em' }, [
-				E('p', {}, [
-					E('strong', {}, [ r.tag ]),
-					' ',
-					r.prerelease ? badge(_('Pre-release'), 'label-warning') : badge(_('Official release'), 'label-success'),
-					' ',
-					isCurrent ? badge(_('Installed'), 'label-info') : E('span', {}, [ '' ])
-				]),
-				E('p', {}, [
-					_('Released: %s  Size: %s').format((r.date || '-').slice(0, 10), fmtSize(r.size))
-				]),
-				btn
-			]));
+		var r = (channel == 'stable') ? res.stable : res.beta;
+		if (!r) {
+			box.appendChild(E('p', {}, [ _('No release available in this channel') ]));
+			return;
 		}
+		if (channel == 'stable')
+			box.appendChild(E('p', {}, [ _('No stable v2 release exists yet; stable channel currently tracks v1.8.x.') ]));
+
+		var isCurrent = (r.tag == res.current);
+		var btnAttrs = { 'class': 'btn cbi-button cbi-button-action' };
+		if (isCurrent)
+			btnAttrs.disabled = 'disabled';
+		else
+			btnAttrs.click = ui.createHandlerFn(self, function(tag, url, sha, ev) {
+				self.confirmInstall(tag, url, sha);
+			}, r.tag, r.url, r.sha256);
+		var btn = E('button', btnAttrs, [ isCurrent ? _('Current version') : _('Install this version') ]);
+
+		box.appendChild(E('div', { 'class': 'cbi-section', 'style': 'border:1px solid var(--border-color); border-radius:4px; padding:.6em; margin-bottom:.6em' }, [
+			E('p', {}, [
+				E('strong', {}, [ r.tag ]),
+				' ',
+				r.prerelease ? badge(_('Pre-release'), 'label-warning') : badge(_('Official release'), 'label-success'),
+				' ',
+				isCurrent ? badge(_('Installed'), 'label-info') : E('span', {}, [ '' ])
+			]),
+			E('p', {}, [ _('Released: %s  Size: %s').format((r.date || '-').slice(0, 10), fmtSize(r.size)) ]),
+			btn
+		]));
 	},
 
 	confirmInstall: function(tag, url, sha) {
@@ -387,10 +397,7 @@ return view.extend({
 			E('p', {}, [ _('The current version is backed up automatically; the updater rolls back if the new version fails to start.') ]),
 			E('p', {}, [ _('The service restarts briefly. Continue?') ]),
 			E('div', { 'class': 'right' }, [
-				E('button', {
-					'class': 'btn',
-					'click': ui.hideModal
-				}, [ _('Cancel') ]),
+				E('button', { 'class': 'btn', 'click': ui.hideModal }, [ _('Cancel') ]),
 				' ',
 				E('button', {
 					'class': 'btn cbi-button cbi-button-important',
@@ -416,7 +423,7 @@ return view.extend({
 
 	uploadAndInstall: function(ev) {
 		var self = this;
-		return ui.uploadFile('/tmp/sunpanel-upload/release.tar.gz').then(function(res) {
+		return ui.uploadFile('/tmp/sunpanel-upload/release.tar.gz').then(function() {
 			self._jobActive = true;
 			return disp('release-import', [ '/tmp/sunpanel-upload/release.tar.gz' ]);
 		}).then(function() {
@@ -462,7 +469,7 @@ return view.extend({
 			var r = rels[i];
 			var isCur = (r.version == info.installed_version);
 			rows.push(E('tr', {}, [
-				E('td', {}, [ r.version, isCur ? badge(_('current'), 'label-success') : E('span', {}, [ '' ]) ]),
+				E('td', {}, [ r.version, isCur ? badge(_('Installed'), 'label-success') : E('span', {}, [ '' ]) ]),
 				E('td', {}, [ fmtSize(r.size) ]),
 				E('td', {}, [
 					!isCur ? E('button', {
@@ -516,203 +523,5 @@ return view.extend({
 				}, [ _('Roll back') ])
 			])
 		]);
-	},
-
-	renderMigrateTab: function(box, info, st) {
-		var self = this;
-		box.innerHTML = '';
-		var stage = st ? (st.stage || '') : '';
-
-		/* step indicator */
-		var steps = [
-			[ '', _('Detect v1') ],
-			[ 'backup', _('Upload backup') ],
-			[ 'deployed', _('Deploy v2 test instance') ],
-			[ 'verified', _('Import and verify') ],
-			[ 'switched', _('Switch port') ],
-			[ 'done', _('Finish and clean up') ]
-		];
-		var stageOrder = { '': 0, backup: 1, deployed: 2, verified: 3, switched: 4, done: 5 };
-		var cur = stageOrder[stage] != null ? stageOrder[stage] : 0;
-		var stepLine = E('p', {});
-		for (var i = 0; i < steps.length; i++) {
-			var done = i < cur;
-			var active = i == cur;
-			stepLine.appendChild(E('span', {
-				'style': 'margin-right:1em; ' + (done ? 'color:#2e7d32;' : (active ? 'font-weight:bold;' : 'color:#888;'))
-			}, [ (done ? '✔ ' : (active ? '▶ ' : '')) + steps[i][1] ]));
-		}
-		box.appendChild(stepLine);
-
-		if (stage && stage != '' && st.message)
-			box.appendChild(E('div', { 'class': 'alert alert-info' }, [ st.message ]));
-
-		/* wizard buttons */
-		var bDetect = E('button', {
-			'class': 'btn cbi-button',
-			'click': ui.createHandlerFn(self, function(ev) {
-				return disp('migrate', [ 'detect' ]).then(function(res) {
-					self._migrateDetect = res.detect;
-					self.renderMigrateTab(box, info, st);
-				});
-			})
-		}, [ _('Detect legacy v1') ]);
-
-		var bUpload = E('button', {
-			'class': 'btn cbi-button cbi-button-action',
-			'click': ui.createHandlerFn(self, function(ev) {
-				return ui.uploadFile('/tmp/sunpanel-upload/backup.zip').then(function() {
-					return disp('migrate', [ 'store-backup', '/tmp/sunpanel-upload/backup.zip' ]);
-				}).then(function() {
-					self._migratePolling = false;
-					return disp('migrate', [ 'detect' ]).then(function(res) {
-						self._migrateDetect = res.detect;
-						self.renderMigrateTab(box, info, st);
-					});
-				}).catch(function(e) {
-					ui.addNotification(null, E('p', {}, [ _('Upload failed: %s').format(e) ]));
-				});
-			})
-		}, [ _('Upload v1 backup (zip)') ]);
-
-		var bDeploy = E('button', {
-			'class': 'btn cbi-button cbi-button-action',
-			'click': ui.createHandlerFn(self, function(ev) {
-				self._migratePolling = true;
-				return disp('migrate', [ 'deploy' ]).then(function() {
-					ui.addTimeLimitedNotification(null, E('p', {}, [ _('Deployment job started') ]), 4000);
-				}).catch(function(e) {
-					self._migratePolling = false;
-					ui.addNotification(null, E('p', {}, [ _('Deployment failed: %s').format(e) ]));
-				});
-			})
-		}, [ _('Deploy v2 test instance (port 3004)') ]);
-
-		var bVerify = E('button', {
-			'class': 'btn cbi-button',
-			'click': ui.createHandlerFn(self, function(ev) {
-				self._migratePolling = true;
-				return disp('migrate', [ 'verify' ]);
-			})
-		}, [ _('Verify test instance') ]);
-
-		var bSwitch = E('button', {
-			'class': 'btn cbi-button cbi-button-important',
-			'click': ui.createHandlerFn(self, function(ev) {
-				self._migratePolling = true;
-				return disp('migrate', [ 'switch' ]).then(function() {
-					ui.addTimeLimitedNotification(null, E('p', {}, [ _('Switch job started') ]), 4000);
-				}).catch(function(e) {
-					ui.addNotification(null, E('p', {}, [ _('Switch failed: %s').format(e) ]));
-				});
-			})
-		}, [ _('Switch to production port') ]);
-
-		var bFinish = E('button', {
-			'class': 'btn cbi-button cbi-button-action',
-			'click': ui.createHandlerFn(self, function(ev) {
-				self._migratePolling = true;
-				return disp('migrate', [ 'finish' ]);
-			})
-		}, [ _('Finish (archive v1)') ]);
-
-		var bAbort = E('button', {
-			'class': 'btn cbi-button cbi-button-negative',
-			'click': ui.createHandlerFn(self, function(ev) {
-				return disp('migrate', [ 'abort' ]).then(function() {
-					self._migratePolling = true;
-				});
-			})
-		}, [ _('Abort and restore v1') ]);
-
-		var row = E('div', { 'style': 'display:flex; flex-wrap:wrap; gap:.5em' });
-
-		/* context-driven button set */
-		var det = this._migrateDetect;
-		var v2installed = (info.mode == 'v2');
-
-		if (stage == '' || stage == 'aborted') {
-			row.appendChild(bDetect);
-			if (det && det.found == '1') {
-				row.appendChild(bUpload);
-				if (det.backup_ready == '1' && v2installed)
-					row.appendChild(bDeploy);
-			}
-		}
-		else if (stage == 'deploying') {
-			row.appendChild(E('em', {}, [ _('Deploying, please wait…') ]));
-		}
-		else if (stage == 'deployed' || stage == 'verify-failed') {
-			row.appendChild(bVerify);
-			row.appendChild(bAbort);
-		}
-		else if (stage == 'verified') {
-			row.appendChild(bSwitch);
-			row.appendChild(bAbort);
-		}
-		else if (stage == 'switched') {
-			row.appendChild(bFinish);
-		}
-		else if (stage == 'done') {
-			box.appendChild(E('div', { 'class': 'alert alert-success' }, [ _('Migration complete. The legacy v1 has been archived; see the version manager.') ]));
-			box.appendChild(row);
-			return;
-		}
-		else if (stage.indexOf('failed') >= 0) {
-			row.appendChild(bAbort);
-		}
-
-		box.appendChild(row);
-
-		/* v1 detail box */
-		if (det && det.found == '1') {
-			box.appendChild(E('div', { 'class': 'cbi-section', 'style': 'margin-top:1em' }, [
-				E('div', { 'class': 'cbi-section-title' }, [ _('Detected legacy v1') ]),
-				kvTable([
-					[ _('Version'), det.version || 'unknown' ],
-					[ _('Data directory'), det.dir ],
-					[ _('Port'), det.port ],
-					[ _('Running'), det.running == '1' ? _('Yes') : _('No') ],
-					[ _('Backup archive'), det.backup_ready == '1' ? _('Uploaded') : _('Not uploaded') ]
-				])
-			]));
-		}
-
-		/* import guidance */
-		if (stage == 'deployed') {
-			box.appendChild(E('div', { 'class': 'cbi-section' }, [
-				E('p', {}, [
-					_('Please open '),
-					' ',
-					E('a', { 'href': 'http://' + window.location.hostname + ':3004/', 'target': '_blank' }, [ 'http://' + window.location.hostname + ':3004/' ]),
-					_(', sign in to the fresh v2 with the default account admin@sun.cc / 12345678, then import the uploaded v1 backup under "System Settings → Backup & Restore". After verifying the content, return here and click "Verify test instance".')
-				])
-			]));
-		}
-
-		/* emergency controls */
-		box.appendChild(E('div', { 'class': 'cbi-section', 'style': 'margin-top:1.5em' }, [
-			E('div', { 'class': 'cbi-section-title' }, [ _('Emergency actions') ]),
-			E('p', {}, [ _('To temporarily fall back to v1 when v2 misbehaves (only while v1 has not been cleaned up):') ]),
-			E('button', {
-				'class': 'btn cbi-button cbi-button-negative',
-				'click': ui.createHandlerFn(self, function(ev) {
-					return disp('legacy-force', [ 'on' ]).then(function() {
-						ui.addTimeLimitedNotification(null, E('p', {}, [ _('Switched to v1 compat mode') ]), 4000);
-					}).catch(function(e) {
-						ui.addNotification(null, E('p', {}, [ _('Operation failed: %s').format(e) ]));
-					});
-				})
-			}, [ _('Force back to v1') ]),
-			' ',
-			E('button', {
-				'class': 'btn cbi-button',
-				'click': ui.createHandlerFn(self, function(ev) {
-					return disp('legacy-force', [ 'off' ]).then(function() {
-						ui.addTimeLimitedNotification(null, E('p', {}, [ _('v1 forced mode disabled') ]), 4000);
-					});
-				})
-			}, [ _('Disable v1 forced mode') ])
-		]));
 	}
 });

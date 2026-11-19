@@ -3,13 +3,15 @@
 // rpcd `file exec` (fs.exec_direct). Always emits exactly one JSON line.
 //
 // Usage: sunpanel-call <action> [args...]
+// NOTE: this ucode build resolves symbols in textual order (no hoisting):
+//       helpers must be declared before first use.
 
 'use strict';
 
-import { readfile, popen, lsdir, stat, access, mkdir, unlink, rename, basename } from 'fs';
+import { readfile, popen, lsdir, stat, mkdir } from 'fs';
 import { cursor } from 'uci';
 
-const PLUGIN_VERSION = '1.0.0';
+const PLUGIN_VERSION = '1.1.0';
 const GITHUB_API = 'https://api.github.com/repos/hslr-s/sun-panel/releases?per_page=30';
 const SHARE = '/usr/share/sunpanel';
 
@@ -76,10 +78,6 @@ function legacy_dir() {
 	if (substr(d, 0, 1) != '/')
 		d = '/' + d;
 	d = replace(d, /\/+$/, '');
-	let st = stat(d + '/conf.ini');
-	if (st == null || st.isdir?.() == true)
-		return '';
-	// conf.ini must be a readable file
 	return (readfile(d + '/conf.ini') != null) ? d : '';
 }
 
@@ -137,9 +135,7 @@ function act_info() {
 	}
 	let legacy = legacy_dir();
 	let mode;
-	if (stat(state_dir() + '/force-legacy') != null && legacy != '')
-		mode = 'legacy-forced';
-	else if (v2_present())
+	if (v2_present())
 		mode = 'v2';
 	else if (legacy != '')
 		mode = 'legacy';
@@ -280,94 +276,10 @@ function act_logs() {
 	let name = ARGV[1], n = int(ARGV[2] ?? '40');
 	if (name == 'update')
 		rj({ ok: true, log: tail_lines(state_dir() + '/update.log', n) });
-	else if (name == 'migrate')
-		rj({ ok: true, log: tail_lines(state_dir() + '/migrate.log', n) });
 	else if (name == 'service')
 		rj({ ok: true, log: trim(sh_out('logread 2>/dev/null | grep -i sun | tail -n ' + n) ?? '') });
 	else
 		err('unknown log: ' + name);
-}
-
-function act_legacy_force() {
-	let onoff = ARGV[1];
-	mkdir(state_dir());
-	if (onoff == 'on') {
-		if (legacy_dir() == '')
-			err('no legacy v1 install found');
-		let f = open(state_dir() + '/force-legacy', 'w');
-		f.write('1\n');
-		f.close();
-		sh_out('/etc/init.d/sunpanel restart >/dev/null 2>&1');
-		rj({ ok: true, mode: 'legacy-forced' });
-	} else {
-		unlink(state_dir() + '/force-legacy');
-		sh_out('/etc/init.d/sunpanel restart >/dev/null 2>&1');
-		rj({ ok: true, mode: v2_present() ? 'v2' : 'auto' });
-	}
-}
-
-function read_kv_mem(text) {
-	let o = {};
-	let lines = split(trim(text ?? ''), '\n');
-	for (let i = 0; i < length(lines); i++) {
-		let p = split(lines[i], '=');
-		if (length(p) >= 2)
-			o[p[0]] = join('=', slice(p, 1));
-	}
-	return o;
-}
-
-function read_kv_tolerate(text) {
-	let o = (text == null) ? {} : read_kv_mem(text);
-	return o;
-}
-
-function act_migrate() {
-	let step = ARGV[1];
-	let mig = SHARE + '/migrate.sh';
-	let sdir = state_dir();
-	mkdir(sdir);
-
-	switch (step) {
-		case 'detect':
-			rj({ ok: true, detect: read_kv_tolerate(sh_out('sh ' + mig + ' detect 2>/dev/null')) });
-			break;
-
-		case 'store-backup': {
-			let src = ARGV[2];
-			if (src == null || stat(src) == null)
-				err('uploaded backup not found');
-			let mdir = data_dir() + '/../migration';
-			mkdir(mdir);
-			let dst = mdir + '/v1-backup.zip';
-			rename(src, dst);
-			rj({ ok: true, stored: dst, size: stat(dst)?.size });
-			break;
-		}
-
-		case 'deploy':
-		case 'switch':
-		case 'finish':
-		case 'abort':
-			sh_bg(sprintf('sh %s %s >> %s/migrate.log 2>&1', mig, sq(step), sq(sdir)));
-			rj({ ok: true, started: step });
-			break;
-
-		case 'status': {
-			let st = read_kv(sdir + '/migrate.state');
-			st.log = tail_lines(sdir + '/migrate.log', 15);
-			rj({ ok: true, state: st });
-			break;
-		}
-
-		case 'reset':
-			unlink(sdir + '/migrate.state');
-			rj({ ok: true });
-			break;
-
-		default:
-			err('unknown migrate step: ' + step);
-	}
 }
 
 /* ---------------- main ---------------- */
@@ -381,13 +293,10 @@ switch (action) {
 	case 'update-start':    act_update_start(); break;
 	case 'update-status':   act_update_status(); break;
 	case 'release-import':  act_release_import(); break;
-	case 'releases':        act_info(); break;
 	case 'rollback':        act_rollback(); break;
 	case 'release-delete':  act_release_delete(); break;
 	case 'conf-render':     act_conf_render(); break;
 	case 'logs':            act_logs(); break;
-	case 'legacy-force':    act_legacy_force(); break;
-	case 'migrate':         act_migrate(); break;
 	default:
 		err('unknown action: ' + action);
 }

@@ -168,7 +168,18 @@ const EN_MAP = {
   '已切换到 v1 兼容模式': 'Switched to v1 compat mode',
   '强制回到 v1': 'Force back to v1',
   '已取消 v1 强制模式': 'v1 forced mode disabled',
-  '取消 v1 强制模式': 'Disable v1 forced mode'
+  '取消 v1 强制模式': 'Disable v1 forced mode',
+  'v1 兼容模式（尚未安装 v2）': 'v1 compat mode (v2 not installed yet)',
+  'v1 兼容模式：网络相关设置沿用旧配置，安装 v2 后将自动生效。': 'v1 compat mode: network settings follow the old configuration and will take effect after v2 is installed.',
+  '启动': 'Start',
+  '停止': 'Stop',
+  '重启': 'Restart',
+  '稳定版（v1.x 线）': 'Stable (v1.x line)',
+  '测试版（v2 线）': 'Beta (v2 line)',
+  '通道已切换，正在检查更新…': 'Update channel switched, checking…',
+  '该通道暂无可用版本': 'No release available in this channel',
+  '已安装版本：%s': 'Installed version: %s',
+  '当前 v2 正式版尚未发布，稳定通道暂对应 v1.8.x 线。': 'No stable v2 release exists yet; stable channel currently tracks v1.8.x.'
 };
 
 const ZH_MAP = Object.fromEntries(Object.entries(EN_MAP).map(([zh, en]) => [en, zh]));
