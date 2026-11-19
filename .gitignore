@@ -7,3 +7,4 @@ po_pairs.txt
 po_strings.txt
 *.log
 .mnemon/
+tmp_*
