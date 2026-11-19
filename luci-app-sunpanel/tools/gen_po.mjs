@@ -179,7 +179,17 @@ const EN_MAP = {
   '通道已切换，正在检查更新…': 'Update channel switched, checking…',
   '该通道暂无可用版本': 'No release available in this channel',
   '已安装版本：%s': 'Installed version: %s',
-  '当前 v2 正式版尚未发布，稳定通道暂对应 v1.8.x 线。': 'No stable v2 release exists yet; stable channel currently tracks v1.8.x.'
+  '当前 v2 正式版尚未发布，稳定通道暂对应 v1.8.x 线。': 'No stable v2 release exists yet; stable channel currently tracks v1.8.x.',
+  '发布源': 'Release source',
+  '保存配置': 'Save settings',
+  '安装所选版本': 'Install selected version',
+  '选择要安装的版本': 'Select a version to install',
+  '点击「检查 GitHub 最新版本」加载版本列表。': 'Click "Check for updates" to load the version list.',
+  '检查中…': 'Checking…',
+  '更新安装成功': 'Update installed successfully',
+  '更新失败，已自动回滚': 'Update failed, rolled back automatically',
+  '更新任务已启动': 'Update job started',
+  '发布源设置已保存': 'Release source settings saved'
 };
 
 const ZH_MAP = Object.fromEntries(Object.entries(EN_MAP).map(([zh, en]) => [en, zh]));

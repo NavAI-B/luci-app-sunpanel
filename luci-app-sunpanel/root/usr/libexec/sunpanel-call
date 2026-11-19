@@ -142,6 +142,10 @@ function act_info() {
 	else
 		mode = 'none';
 
+	// reflect the version that is actually running
+	let legacy_ver = trim(readfile('/usr/share/sunpanel/version') ?? '');
+	let ver = (mode == 'v2') ? installed_version() : legacy_ver;
+
 	rj({
 		ok: true,
 		plugin_version: PLUGIN_VERSION,
@@ -149,14 +153,14 @@ function act_info() {
 		running: running(),
 		service_enabled: service_enabled(),
 		port: sp_port(),
-		installed_version: installed_version(),
+		installed_version: ver,
 		app_dir: app,
 		data_dir: data_dir(),
 		releases: releases,
 		legacy: {
 			dir: legacy,
 			binary: (stat('/usr/sbin/sun-panel') != null),
-			version_file: trim(readfile('/usr/share/sunpanel/version') ?? '')
+			version_file: legacy_ver
 		},
 		channel: uci_get('channel', 'beta'),
 		mirror: uci_get('mirror', ''),
@@ -186,6 +190,7 @@ function act_check_update() {
 
 	let arch = goarch();
 	let stable = null, beta = null;
+	let stable_list = [], beta_list = [];
 	for (let i = 0; i < length(rels); i++) {
 		let r = rels[i];
 		let tag = r.tag_name;
@@ -210,12 +215,22 @@ function act_check_update() {
 		};
 		if (type(asset.digest) == 'string' && index(asset.digest, 'sha256:') == 0)
 			e.sha256 = substr(asset.digest, 7);
-		if (e.prerelease && beta == null)
-			beta = e;
-		if (!e.prerelease && stable == null)
-			stable = e;
+		if (e.prerelease) {
+			if (beta == null)
+				beta = e;
+			if (length(beta_list) < 15)
+				push(beta_list, e);
+		}
+		else {
+			if (stable == null)
+				stable = e;
+			if (length(stable_list) < 15)
+				push(stable_list, e);
+		}
 	}
-	rj({ ok: true, current: installed_version(), arch: arch, stable: stable, beta: beta });
+	rj({ ok: true, current: installed_version(), arch: arch,
+		stable: stable, beta: beta,
+		stable_list: stable_list, beta_list: beta_list });
 }
 
 function act_update_start() {

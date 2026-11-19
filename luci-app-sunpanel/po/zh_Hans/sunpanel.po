@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: luci-app-sunpanel 1.0.0\n"
-"POT-Creation-Date: 2026-11-19 06:32\n"
+"POT-Creation-Date: 2026-11-19 07:06\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -54,6 +54,12 @@ msgstr "服务日志"
 msgid "Refresh service log"
 msgstr "刷新服务日志"
 
+msgid "Update installed successfully"
+msgstr "更新安装成功"
+
+msgid "Update failed, rolled back automatically"
+msgstr "更新失败，已自动回滚"
+
 msgid "v2 running"
 msgstr "v2 正式运行"
 
@@ -62,9 +68,6 @@ msgstr "v1 兼容模式（尚未安装 v2）"
 
 msgid "Not installed"
 msgstr "未安装"
-
-msgid "Open panel"
-msgstr "打开面板"
 
 msgid "Running"
 msgstr "运行中"
@@ -105,17 +108,20 @@ msgstr "停止"
 msgid "Restart"
 msgstr "重启"
 
+msgid "Open panel"
+msgstr "打开面板"
+
 msgid "Sun-Panel basic configuration"
 msgstr "Sun-Panel 基础配置"
 
 msgid "Global settings"
 msgstr "全局设置"
 
-msgid "Enable service"
-msgstr "启用服务"
-
 msgid "v1 compat mode: network settings follow the old configuration and will take effect after v2 is installed."
 msgstr "v1 兼容模式：网络相关设置沿用旧配置，安装 v2 后将自动生效。"
+
+msgid "Enable service"
+msgstr "启用服务"
 
 msgid "HTTP port"
 msgstr "HTTP 端口"
@@ -132,41 +138,11 @@ msgstr "Token 有效期（小时）"
 msgid "Contains conf / database / uploads / runtime / custom / micro_app; keep it on a large partition"
 msgstr "包含 conf / database / uploads / runtime / custom / micro_app，建议放在大容量分区"
 
-msgid "Directory holding the sun-panel binary and web assets, managed by the version manager"
-msgstr "sun-panel 主程序与 web 前端所在目录，由版本管理功能维护"
-
 msgid "Manage conf.ini from LuCI"
 msgstr "由 LuCI 管理 conf.ini"
 
 msgid "When enabled, conf/conf.ini is regenerated from these options at every service start; when disabled it is only created once and manual edits survive"
 msgstr "开启后每次启动按上方配置重新生成 conf/conf.ini；关闭则仅首次生成，保留手工修改"
-
-msgid "Update channel"
-msgstr "更新通道"
-
-msgid "Stable (official releases)"
-msgstr "稳定版（正式 release）"
-
-msgid "Beta (v2 pre-releases)"
-msgstr "测试版（v2 beta 预发布）"
-
-msgid "No stable v2 release exists yet; choose beta to follow v2"
-msgstr "当前 v2 正式版尚未发布，跟随 v2 需选择测试版通道"
-
-msgid "GitHub mirror prefix"
-msgstr "GitHub 加速前缀"
-
-msgid "Empty for direct connection, e.g. https://ghfast.top"
-msgstr "留空直连，例如 https://ghfast.top"
-
-msgid "Configure a mirror prefix when release downloads fail"
-msgstr "下载 release 资产失败时可配置加速站前缀"
-
-msgid "Download proxy"
-msgstr "下载代理"
-
-msgid "Empty to disable, e.g. http://127.0.0.1:7890"
-msgstr "留空不使用，例如 http://127.0.0.1:7890"
 
 msgid "Restart service"
 msgstr "重启服务"
@@ -180,11 +156,11 @@ msgstr "配置已渲染，服务已重启"
 msgid "Operation failed: %s"
 msgstr "操作失败：%s"
 
-msgid "Installed version: %s"
-msgstr "已安装版本：%s"
+msgid "Empty for direct connection, e.g. https://ghfast.top"
+msgstr "留空直连，例如 https://ghfast.top"
 
-msgid "Architecture: %s"
-msgstr "架构：%s"
+msgid "Empty to disable, e.g. http://127.0.0.1:7890"
+msgstr "留空不使用，例如 http://127.0.0.1:7890"
 
 msgid "Stable (v1.x line)"
 msgstr "稳定版（v1.x 线）"
@@ -192,8 +168,35 @@ msgstr "稳定版（v1.x 线）"
 msgid "Beta (v2 line)"
 msgstr "测试版（v2 线）"
 
+msgid "Release source"
+msgstr "发布源"
+
+msgid "Update channel"
+msgstr "更新通道"
+
+msgid "GitHub mirror prefix"
+msgstr "GitHub 加速前缀"
+
+msgid "Download proxy"
+msgstr "下载代理"
+
+msgid "Save settings"
+msgstr "保存配置"
+
+msgid "Click \"Check for updates\" to load the version list."
+msgstr "点击「检查 GitHub 最新版本」加载版本列表。"
+
 msgid "Check for updates"
 msgstr "检查更新"
+
+msgid "Installed version: %s"
+msgstr "已安装版本：%s"
+
+msgid "Architecture: %s"
+msgstr "架构：%s"
+
+msgid "Checking…"
+msgstr "检查中…"
 
 msgid "Check failed: %s"
 msgstr "检查失败：%s"
@@ -201,35 +204,14 @@ msgstr "检查失败：%s"
 msgid "Check latest GitHub releases"
 msgstr "检查 GitHub 最新版本"
 
-msgid "Offline install"
-msgstr "离线安装"
-
-msgid "Upload an official release tarball from this computer (sun-panel_vX_linux_arm64.tar.gz), useful when GitHub is unreachable."
-msgstr "从本地上传官方 release 压缩包（sun-panel_vX_linux_arm64.tar.gz），适合无法直连 GitHub 的环境。"
-
-msgid "Upload and install release tarball"
-msgstr "上传并安装 release 包"
-
-msgid "Update progress"
-msgstr "更新进度"
-
-msgid "Locally kept versions"
-msgstr "本地保留的版本"
-
-msgid "Update channel switched, checking…"
-msgstr "通道已切换，正在检查更新…"
-
 msgid "No release available in this channel"
 msgstr "该通道暂无可用版本"
 
 msgid "No stable v2 release exists yet; stable channel currently tracks v1.8.x."
 msgstr "当前 v2 正式版尚未发布，稳定通道暂对应 v1.8.x 线。"
 
-msgid "Current version"
-msgstr "当前版本"
-
-msgid "Install this version"
-msgstr "安装此版本"
+msgid "Install selected version"
+msgstr "安装所选版本"
 
 msgid "Pre-release"
 msgstr "预发布"
@@ -240,8 +222,11 @@ msgstr "正式版"
 msgid "Installed"
 msgstr "已安装"
 
-msgid "Released: %s  Size: %s"
-msgstr "发布时间：%s　大小：%s"
+msgid "Select a version to install"
+msgstr "选择要安装的版本"
+
+msgid "Release source settings saved"
+msgstr "发布源设置已保存"
 
 msgid "Install Sun-Panel %s"
 msgstr "安装 Sun-Panel %s"
@@ -258,60 +243,9 @@ msgstr "取消"
 msgid "Install"
 msgstr "确认安装"
 
-msgid "Update job started, watch the progress below"
-msgstr "更新任务已启动，请关注下方进度"
+msgid "Update job started"
+msgstr "更新任务已启动"
 
 msgid "Failed to start update: %s"
 msgstr "启动更新失败：%s"
-
-msgid "Offline install job started"
-msgstr "离线安装任务已启动"
-
-msgid "Upload or install failed: %s"
-msgstr "上传或安装失败：%s"
-
-msgid "No update job yet"
-msgstr "暂无更新任务"
-
-msgid "State"
-msgstr "状态"
-
-msgid "Version: %s"
-msgstr "版本：%s"
-
-msgid "(no log yet)"
-msgstr "（暂无日志）"
-
-msgid "No stored versions"
-msgstr "暂无历史版本"
-
-msgid "Roll back to this version"
-msgstr "回滚到此版本"
-
-msgid "Delete"
-msgstr "删除"
-
-msgid "Version"
-msgstr "版本"
-
-msgid "Size"
-msgstr "大小"
-
-msgid "Actions"
-msgstr "操作"
-
-msgid "Roll back to %s"
-msgstr "回滚到 %s"
-
-msgid "The current version is kept as a history entry; the service restarts on %s."
-msgstr "当前版本会被保留为历史版本，服务将重启并切换到 %s。"
-
-msgid "Rollback job started"
-msgstr "回滚任务已启动"
-
-msgid "Rollback failed: %s"
-msgstr "回滚失败：%s"
-
-msgid "Roll back"
-msgstr "确认回滚"
 

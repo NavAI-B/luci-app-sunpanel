@@ -50,6 +50,12 @@ msgstr ""
 msgid "Refresh service log"
 msgstr ""
 
+msgid "Update installed successfully"
+msgstr ""
+
+msgid "Update failed, rolled back automatically"
+msgstr ""
+
 msgid "v2 running"
 msgstr ""
 
@@ -57,9 +63,6 @@ msgid "v1 compat mode (v2 not installed yet)"
 msgstr ""
 
 msgid "Not installed"
-msgstr ""
-
-msgid "Open panel"
 msgstr ""
 
 msgid "Running"
@@ -101,16 +104,19 @@ msgstr ""
 msgid "Restart"
 msgstr ""
 
+msgid "Open panel"
+msgstr ""
+
 msgid "Sun-Panel basic configuration"
 msgstr ""
 
 msgid "Global settings"
 msgstr ""
 
-msgid "Enable service"
+msgid "v1 compat mode: network settings follow the old configuration and will take effect after v2 is installed."
 msgstr ""
 
-msgid "v1 compat mode: network settings follow the old configuration and will take effect after v2 is installed."
+msgid "Enable service"
 msgstr ""
 
 msgid "HTTP port"
@@ -128,40 +134,10 @@ msgstr ""
 msgid "Contains conf / database / uploads / runtime / custom / micro_app; keep it on a large partition"
 msgstr ""
 
-msgid "Directory holding the sun-panel binary and web assets, managed by the version manager"
-msgstr ""
-
 msgid "Manage conf.ini from LuCI"
 msgstr ""
 
 msgid "When enabled, conf/conf.ini is regenerated from these options at every service start; when disabled it is only created once and manual edits survive"
-msgstr ""
-
-msgid "Update channel"
-msgstr ""
-
-msgid "Stable (official releases)"
-msgstr ""
-
-msgid "Beta (v2 pre-releases)"
-msgstr ""
-
-msgid "No stable v2 release exists yet; choose beta to follow v2"
-msgstr ""
-
-msgid "GitHub mirror prefix"
-msgstr ""
-
-msgid "Empty for direct connection, e.g. https://ghfast.top"
-msgstr ""
-
-msgid "Configure a mirror prefix when release downloads fail"
-msgstr ""
-
-msgid "Download proxy"
-msgstr ""
-
-msgid "Empty to disable, e.g. http://127.0.0.1:7890"
 msgstr ""
 
 msgid "Restart service"
@@ -176,10 +152,10 @@ msgstr ""
 msgid "Operation failed: %s"
 msgstr ""
 
-msgid "Installed version: %s"
+msgid "Empty for direct connection, e.g. https://ghfast.top"
 msgstr ""
 
-msgid "Architecture: %s"
+msgid "Empty to disable, e.g. http://127.0.0.1:7890"
 msgstr ""
 
 msgid "Stable (v1.x line)"
@@ -188,7 +164,34 @@ msgstr ""
 msgid "Beta (v2 line)"
 msgstr ""
 
+msgid "Release source"
+msgstr ""
+
+msgid "Update channel"
+msgstr ""
+
+msgid "GitHub mirror prefix"
+msgstr ""
+
+msgid "Download proxy"
+msgstr ""
+
+msgid "Save settings"
+msgstr ""
+
+msgid "Click \"Check for updates\" to load the version list."
+msgstr ""
+
 msgid "Check for updates"
+msgstr ""
+
+msgid "Installed version: %s"
+msgstr ""
+
+msgid "Architecture: %s"
+msgstr ""
+
+msgid "Checking…"
 msgstr ""
 
 msgid "Check failed: %s"
@@ -197,34 +200,13 @@ msgstr ""
 msgid "Check latest GitHub releases"
 msgstr ""
 
-msgid "Offline install"
-msgstr ""
-
-msgid "Upload an official release tarball from this computer (sun-panel_vX_linux_arm64.tar.gz), useful when GitHub is unreachable."
-msgstr ""
-
-msgid "Upload and install release tarball"
-msgstr ""
-
-msgid "Update progress"
-msgstr ""
-
-msgid "Locally kept versions"
-msgstr ""
-
-msgid "Update channel switched, checking…"
-msgstr ""
-
 msgid "No release available in this channel"
 msgstr ""
 
 msgid "No stable v2 release exists yet; stable channel currently tracks v1.8.x."
 msgstr ""
 
-msgid "Current version"
-msgstr ""
-
-msgid "Install this version"
+msgid "Install selected version"
 msgstr ""
 
 msgid "Pre-release"
@@ -236,7 +218,10 @@ msgstr ""
 msgid "Installed"
 msgstr ""
 
-msgid "Released: %s  Size: %s"
+msgid "Select a version to install"
+msgstr ""
+
+msgid "Release source settings saved"
 msgstr ""
 
 msgid "Install Sun-Panel %s"
@@ -254,60 +239,9 @@ msgstr ""
 msgid "Install"
 msgstr ""
 
-msgid "Update job started, watch the progress below"
+msgid "Update job started"
 msgstr ""
 
 msgid "Failed to start update: %s"
-msgstr ""
-
-msgid "Offline install job started"
-msgstr ""
-
-msgid "Upload or install failed: %s"
-msgstr ""
-
-msgid "No update job yet"
-msgstr ""
-
-msgid "State"
-msgstr ""
-
-msgid "Version: %s"
-msgstr ""
-
-msgid "(no log yet)"
-msgstr ""
-
-msgid "No stored versions"
-msgstr ""
-
-msgid "Roll back to this version"
-msgstr ""
-
-msgid "Delete"
-msgstr ""
-
-msgid "Version"
-msgstr ""
-
-msgid "Size"
-msgstr ""
-
-msgid "Actions"
-msgstr ""
-
-msgid "Roll back to %s"
-msgstr ""
-
-msgid "The current version is kept as a history entry; the service restarts on %s."
-msgstr ""
-
-msgid "Rollback job started"
-msgstr ""
-
-msgid "Rollback failed: %s"
-msgstr ""
-
-msgid "Roll back"
 msgstr ""
 
