@@ -9,6 +9,7 @@ include $(TOPDIR)/rules.mk
 PKG_NAME:=luci-app-sunpanel
 PKG_VERSION:=1.0.0
 PKG_RELEASE:=1
+PKG_PO_VERSION:=1.0.0
 
 LUCI_TITLE:=LuCI support for Sun-Panel v2 (service, updates, v1 migration)
 LUCI_DESCRIPTION:=procd service management, GitHub release updater with \

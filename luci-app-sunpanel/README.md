@@ -27,30 +27,53 @@
   `manage_conf=0` 时只生成一次，保留手工修改。
 - **网络不友好环境**：支持 GitHub 加速前缀（镜像）与 HTTP 代理两种下载加速方式，另可离线安装。
 
-## 安装（成品包，免 SDK）
+## 安装（apk 包，LuCI 软件包界面上传）
 
-在路由器上执行（假设包已上传到 `/tmp/sunpanel-installer-1.0.0.tar.gz`）：
+产物为两个标准 apk 包（SDK 构建、prime256v1 签名）：
+
+- `luci-app-sunpanel-1.0.0-r1.apk` — 本体（服务 + LuCI 页面）
+- `luci-i18n-sunpanel-zh-cn-1.0.0.apk` — 简体中文翻译包
+
+**第一次安装前，先信任签名公钥**（只需一次，之后升级无需再做）：
 
 ```sh
-cd /tmp
-tar -xzf sunpanel-installer-1.0.0.tar.gz
-cd sunpanel-installer-1.0.0
-sh install.sh
+scp dist/sunpanel-local.pub.pem root@192.168.2.1:/etc/apk/keys/sunpanel-local.pem
 ```
 
-安装脚本会自动：备份旧 UCI 配置 → 卸载旧 apk 包 → 写入新文件 → 迁移配置（修正旧版相对路径、
-清除重复 section）→ 重载 rpcd → 启动服务（v1 垫片或 v2）。
+然后在 LuCI → 系统 → 软件包 → 上传软件包，依次安装两个 apk（先本体后翻译，
+或直接都传，apk 会按依赖排序），最后刷新页面即可在「服务」菜单看到 Sun-Panel。
 
-卸载：`sh uninstall.sh`（保留 /etc/config/sunpanel、v2 数据目录与程序目录）。
+命令行等价操作：
 
-## 安装（SDK 构建 apk/ipk）
+```sh
+apk add ./luci-app-sunpanel-1.0.0-r1.apk
+apk add ./luci-i18n-sunpanel-zh-cn-1.0.0.apk
+```
 
-把 `luci-app-sunpanel/` 目录放进 luci feed（`feeds/luci/applications/luci-app-sunpanel`）后正常编译。
-依赖：`+luci-base +curl +ucode +ucode-mod-fs +ucode-mod-uci +rpcd +rpcd-mod-file`。
-`po/` 会被 luci.mk 自动编译为 `luci-i18n-sunpanel-zh-cn` / `luci-i18n-sunpanel-en`。
+卸载：LuCI 软件包列表中移除，或 `apk del luci-i18n-sunpanel-zh-cn luci-app-sunpanel`。
+配置 `/etc/config/sunpanel` 与数据、程序目录默认保留。
 
-> 翻译包说明：本插件源字符串即中文，`po/zh-cn` 为原文基准（po2lmo 规范会跳过译文=原文的条目，
-> 属正常现象），实际翻译内容在 `po/en`（英文界面）。
+## 构建（ImmortalWrt SDK，WSL 实测）
+
+严格按第三方包规范：包源码放入 luci feed（`feeds/luci/applications/luci-app-sunpanel`），
+`po/` 由 luci.mk 自动编译为 `luci-i18n-sunpanel-zh-cn`。
+
+WSL Ubuntu 22.04 内一键复现（详见 `tools/build_in_wsl.sh`）：
+
+```sh
+# 1. 下载对应 SDK（本机目标 rockchip/armv8）
+curl -LO https://mirror.nju.edu.cn/immortalwrt/snapshots/targets/rockchip/armv8/ \
+     immortalwrt-sdk-rockchip-armv8_gcc-14.4.0_musl.Linux-x86_64.tar.zst
+# 2. 解包后克隆 luci feed，把本包放进 applications/
+# 3. feeds.conf 里保留 SDK 默认的 base feed 行（系统包 ucode/rpcd/libubox 等来源，
+#    缺失会导致 lucihttp/cgi-io/ucode-mod-html 等依赖编译失败）
+# 4. 生成 prime256v1 签名密钥对 private-key.pem / public-key.pem（rules.mk 约定）
+# 5. ./scripts/feeds update && install && make package/feeds/luci/luci-app-sunpanel/compile
+```
+
+注意：luci 构建体系只认 `po/<规范语言目录>`（如 `zh_Hans`），因此 UI 源串为英文、
+`po/zh_Hans/sunpanel.po` 承载中文翻译——这是上游 luci 应用的标准形态；
+`tools/gen_po.mjs` 负责维护这套映射（`rewrite` 模式把 JS 源串切换为英文）。
 
 ## 迁移向导（v1 → v2）
 
@@ -70,7 +93,7 @@ sh install.sh
 
 ```
 luci-app-sunpanel/
-├── Makefile                       # luci feed 包定义
+├── Makefile                       # luci feed 包定义（luci.mk，自动产出 i18n 子包）
 ├── htdocs/.../view/sunpanel.js    # LuCI 页面（状态/设置/版本/迁移 四标签）
 ├── root/
 │   ├── etc/config/sunpanel        # UCI 默认配置
@@ -80,14 +103,19 @@ luci-app-sunpanel/
 │   ├── usr/share/luci/menu.d/…json
 │   ├── usr/share/rpcd/acl.d/…json
 │   └── usr/share/sunpanel/        # common.sh / confgen.sh / update.sh /
-│                                  # migrate.sh / install-migrate.sh / payload-apply.sh
-├── po/ (templates, zh-cn, en)     # 翻译源
-├── installer/                     # 免 SDK 直拷贝安装/卸载脚本
-└── tools/                         # gen_po.mjs / po2lmo.mjs / lmo_roundtrip.mjs
+│                                  # migrate.sh / install-migrate.sh
+├── po/ (templates, zh_Hans)       # 翻译源（英文源串 + 中文翻译）
+└── tools/                         # gen_po.mjs（i18n 维护）/ WSL SDK 构建脚本
 ```
+
+产物（`bin/packages/aarch64_generic/luci/`）：
+`luci-app-sunpanel-1.0.0-r1.apk`、`luci-i18n-sunpanel-zh-cn-1.0.0.apk`、
+签名公钥 `public-key.pem`（即 `dist/sunpanel-local.pub.pem`）。
 
 ## 故障排查
 
+- **上传安装报签名/UNTRUSTED 错误**：`/etc/apk/keys/` 里还没有 `sunpanel-local.pem`
+  公钥，按「安装」一节的 scp 命令放一次即可。
 - **下载 release 失败**：基础设置里配置「GitHub 加速前缀」（如 `https://ghfast.top`）或
   「下载代理」（如路由器 clash 的 `http://127.0.0.1:7890`）；也可走离线安装。
 - **服务无法启动**：服务状态页查看日志；常见原因是数据目录所在分区未挂载。

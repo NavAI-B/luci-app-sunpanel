@@ -1,448 +1,445 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: luci-app-sunpanel 1.0.0\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-19 03:33\n"
-"Language: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: gen_po.mjs\n"
 
-msgid "GitHub 加速前缀"
+msgid "Dispatcher call failed"
 msgstr ""
 
-msgid "HTTP 端口"
+msgid "Downloading"
 msgstr ""
 
-msgid "HTTPS 端口"
+msgid "Verifying SHA256"
 msgstr ""
 
-msgid "Sun-Panel 基础配置"
+msgid "Extracting"
 msgstr ""
 
-msgid "Token 有效期（小时）"
+msgid "Switching version"
 msgstr ""
 
-msgid "conf.ini 渲染失败"
+msgid "Done"
 msgstr ""
 
-msgid "sun-panel 主程序与 web 前端所在目录，由版本管理功能维护"
+msgid "Failed"
 msgstr ""
 
-msgid "v1 兼容模式（等待迁移）"
+msgid "Deploying v2 test instance"
 msgstr ""
 
-msgid "v1 强制模式（应急回退）"
+msgid "v2 test instance running, import the backup in the v2 UI now"
 msgstr ""
 
-msgid "v1 迁移向导"
+msgid "Test instance verified"
 msgstr ""
 
-msgid "v2 已切换为正式实例"
+msgid "v2 switched to the primary instance"
 msgstr ""
 
-msgid "v2 正式运行"
+msgid "Deployment failed"
 msgstr ""
 
-msgid "v2 试运行中，请在 v2 界面导入备份"
+msgid "Verification failed"
 msgstr ""
 
-msgid "上传 v1 备份包 (zip)"
+msgid "Switch failed"
 msgstr ""
 
-msgid "上传备份包"
+msgid "Aborted, v1 is serving again"
 msgstr ""
 
-msgid "上传失败：%s"
+msgid "Migration complete"
 msgstr ""
 
-msgid "上传并安装 release 包"
+msgid "Service status"
 msgstr ""
 
-msgid "上传或安装失败：%s"
+msgid "Basic settings"
 msgstr ""
 
-msgid "下载 release 资产失败时可配置加速站前缀"
+msgid "Version manager"
 msgstr ""
 
-msgid "下载代理"
+msgid "v1 migration wizard"
 msgstr ""
 
-msgid "中止并恢复 v1 服务"
+msgid "Loading…"
 msgstr ""
 
-msgid "从本地上传官方 release 压缩包（sun-panel_vX_linux_arm64.tar.gz），适合无法直连 GitHub 的环境。"
+msgid "Status"
 msgstr ""
 
-msgid "保存并应用后，若修改了端口等参数需重启服务才能生效。"
+msgid "(empty)"
 msgstr ""
 
-msgid "全局设置"
+msgid "Refresh service log"
 msgstr ""
 
-msgid "切换任务已启动"
+msgid "Service log"
 msgstr ""
 
-msgid "切换到正式端口"
+msgid "Migration follows the officially recommended path: export a v1 backup, deploy a fresh v2 test instance, import the backup in the v2 UI, then switch to the production port after verification. The v1 data directory stays read-only throughout."
 msgstr ""
 
-msgid "切换失败"
+msgid "v2 running"
 msgstr ""
 
-msgid "切换失败：%s"
+msgid "v1 compat mode (pending migration)"
 msgstr ""
 
-msgid "切换正式端口"
+msgid "v1 forced mode (emergency fallback)"
 msgstr ""
 
-msgid "删除"
+msgid "Not installed"
 msgstr ""
 
-msgid "刷新服务日志"
+msgid "Open panel"
 msgstr ""
 
-msgid "加载中…"
+msgid "Running"
 msgstr ""
 
-msgid "包含 conf / database / uploads / runtime / custom / micro_app，建议放在大容量分区"
+msgid "Stopped"
 msgstr ""
 
-msgid "发布时间：%s　大小：%s"
+msgid "Mode"
 msgstr ""
 
-msgid "取消"
+msgid "Installed version"
 msgstr ""
 
-msgid "取消 v1 强制模式"
+msgid "Listen port"
 msgstr ""
 
-msgid "否"
+msgid "Autostart"
 msgstr ""
 
-msgid "启动更新失败：%s"
+msgid "Yes"
 msgstr ""
 
-msgid "启用服务"
+msgid "No"
 msgstr ""
 
-msgid "回滚任务已启动"
+msgid "Program directory"
 msgstr ""
 
-msgid "回滚到 %s"
+msgid "Data directory"
 msgstr ""
 
-msgid "回滚到此版本"
+msgid "Sun-Panel basic configuration"
 msgstr ""
 
-msgid "回滚失败：%s"
+msgid "Global settings"
 msgstr ""
 
-msgid "基础设置"
+msgid "Enable service"
 msgstr ""
 
-msgid "备份包"
+msgid "HTTP port"
 msgstr ""
 
-msgid "大小"
+msgid "HTTPS port"
 msgstr ""
 
-msgid "失败"
+msgid "Listen address"
 msgstr ""
 
-msgid "安装 Sun-Panel %s"
+msgid "Token lifetime (hours)"
 msgstr ""
 
-msgid "安装此版本"
+msgid "Contains conf / database / uploads / runtime / custom / micro_app; keep it on a large partition"
 msgstr ""
 
-msgid "安装过程会自动备份当前版本，若新版本启动异常会自动回滚。"
+msgid "Directory holding the sun-panel binary and web assets, managed by the version manager"
 msgstr ""
 
-msgid "完成"
+msgid "Manage conf.ini from LuCI"
 msgstr ""
 
-msgid "完成清理"
+msgid "When enabled, conf/conf.ini is regenerated from these options at every service start; when disabled it is only created once and manual edits survive"
 msgstr ""
 
-msgid "完成清理（归档 v1）"
+msgid "Update channel"
 msgstr ""
 
-msgid "导入并验证"
+msgid "Stable (official releases)"
 msgstr ""
 
-msgid "已上传"
+msgid "Beta (v2 pre-releases)"
 msgstr ""
 
-msgid "已中止，v1 已恢复服务"
+msgid "No stable v2 release exists yet; choose beta to follow v2"
 msgstr ""
 
-msgid "已停止"
+msgid "GitHub mirror prefix"
 msgstr ""
 
-msgid "已切换到 v1 兼容模式"
+msgid "Empty for direct connection, e.g. https://ghfast.top"
 msgstr ""
 
-msgid "已取消 v1 强制模式"
+msgid "Configure a mirror prefix when release downloads fail"
 msgstr ""
 
-msgid "已安装"
+msgid "Download proxy"
 msgstr ""
 
-msgid "已安装版本"
+msgid "Empty to disable, e.g. http://127.0.0.1:7890"
 msgstr ""
 
-msgid "应急操作"
+msgid "After Save & Apply a service restart is required for port changes to take effect."
 msgstr ""
 
-msgid "开启后每次启动按上方配置重新生成 conf/conf.ini；关闭则仅首次生成，保留手工修改"
+msgid "Restart service"
 msgstr ""
 
-msgid "开机自启"
+msgid "conf.ini rendering failed"
 msgstr ""
 
-msgid "强制回到 v1"
+msgid "Configuration rendered, service restarted"
 msgstr ""
 
-msgid "当前"
+msgid "Operation failed: %s"
 msgstr ""
 
-msgid "当前 v2 正式版尚未发布，跟随 v2 需选择测试版通道"
+msgid "Check for updates"
 msgstr ""
 
-msgid "当前版本"
+msgid "Current version: %s"
 msgstr ""
 
-msgid "当前版本会被保留为历史版本，服务将重启并切换到 %s。"
+msgid "Architecture: %s"
 msgstr ""
 
-msgid "当前版本：%s"
+msgid "Channel: %s"
 msgstr ""
 
-msgid "打开面板"
+msgid "Beta"
 msgstr ""
 
-msgid "操作"
+msgid "Stable"
 msgstr ""
 
-msgid "操作失败：%s"
+msgid "Check failed: %s"
 msgstr ""
 
-msgid "数据目录"
+msgid "Check latest GitHub releases"
 msgstr ""
 
-msgid "是"
+msgid "Offline install"
 msgstr ""
 
-msgid "暂无历史版本"
+msgid "Upload an official release tarball from this computer (sun-panel_vX_linux_arm64.tar.gz), useful when GitHub is unreachable."
 msgstr ""
 
-msgid "暂无更新任务"
+msgid "Upload and install release tarball"
 msgstr ""
 
-msgid "更新任务已启动，请关注下方进度"
+msgid "Update progress"
 msgstr ""
 
-msgid "更新进度"
+msgid "Locally kept versions"
 msgstr ""
 
-msgid "更新通道"
+msgid "Stable channel"
 msgstr ""
 
-msgid "服务将短暂中断，确认继续？"
+msgid "Beta channel"
 msgstr ""
 
-msgid "服务日志"
+msgid "No release available"
 msgstr ""
 
-msgid "服务状态"
+msgid "Current version"
 msgstr ""
 
-msgid "未上传"
+msgid "Install this version"
 msgstr ""
 
-msgid "未安装"
+msgid "Pre-release"
 msgstr ""
 
-msgid "本地保留的版本"
+msgid "Official release"
 msgstr ""
 
-msgid "架构：%s"
+msgid "Installed"
 msgstr ""
 
-msgid "检查 GitHub 最新版本"
+msgid "Released: %s  Size: %s"
 msgstr ""
 
-msgid "检查失败：%s"
+msgid "Install Sun-Panel %s"
 msgstr ""
 
-msgid "检查更新"
+msgid "The current version is backed up automatically; the updater rolls back if the new version fails to start."
 msgstr ""
 
-msgid "检测 v1"
+msgid "The service restarts briefly. Continue?"
 msgstr ""
 
-msgid "检测到的旧版 v1"
+msgid "Cancel"
 msgstr ""
 
-msgid "检测旧版 v1"
+msgid "Install"
 msgstr ""
 
-msgid "正在下载"
+msgid "Update job started, watch the progress below"
 msgstr ""
 
-msgid "正在切换版本"
+msgid "Failed to start update: %s"
 msgstr ""
 
-msgid "正在校验 SHA256"
+msgid "Offline install job started"
 msgstr ""
 
-msgid "正在解包"
+msgid "Upload or install failed: %s"
 msgstr ""
 
-msgid "正在部署 v2 试运行实例"
+msgid "No update job yet"
 msgstr ""
 
-msgid "正式版"
+msgid "State"
 msgstr ""
 
-msgid "没有可用版本"
+msgid "Version: %s"
 msgstr ""
 
-msgid "测试版"
+msgid "(no log yet)"
 msgstr ""
 
-msgid "测试版（v2 beta 预发布）"
+msgid "No stored versions"
 msgstr ""
 
-msgid "测试通道（beta）"
+msgid "current"
 msgstr ""
 
-msgid "版本"
+msgid "Roll back to this version"
 msgstr ""
 
-msgid "版本管理"
+msgid "Delete"
 msgstr ""
 
-msgid "版本：%s"
+msgid "Version"
 msgstr ""
 
-msgid "状态"
+msgid "Size"
 msgstr ""
 
-msgid "由 LuCI 管理 conf.ini"
+msgid "Actions"
 msgstr ""
 
-msgid "留空不使用，例如 http://127.0.0.1:7890"
+msgid "Roll back to %s"
 msgstr ""
 
-msgid "留空直连，例如 https://ghfast.top"
+msgid "The current version is kept as a history entry; the service restarts on %s."
 msgstr ""
 
-msgid "监听地址"
+msgid "Rollback job started"
 msgstr ""
 
-msgid "监听端口"
+msgid "Rollback failed: %s"
 msgstr ""
 
-msgid "确认回滚"
+msgid "Roll back"
 msgstr ""
 
-msgid "确认安装"
+msgid "Detect v1"
 msgstr ""
 
-msgid "离线安装"
+msgid "Upload backup"
 msgstr ""
 
-msgid "离线安装任务已启动"
+msgid "Deploy v2 test instance"
 msgstr ""
 
-msgid "程序目录"
+msgid "Import and verify"
 msgstr ""
 
-msgid "稳定版"
+msgid "Switch port"
 msgstr ""
 
-msgid "稳定版（正式 release）"
+msgid "Finish and clean up"
 msgstr ""
 
-msgid "稳定通道"
+msgid "Detect legacy v1"
 msgstr ""
 
-msgid "端口"
+msgid "Upload failed: %s"
 msgstr ""
 
-msgid "若 v2 出现问题需要临时回到 v1（仅当 v1 尚未被清理时可用）："
+msgid "Upload v1 backup (zip)"
 msgstr ""
 
-msgid "试运行验证通过"
+msgid "Deployment job started"
 msgstr ""
 
-msgid "请打开"
+msgid "Deployment failed: %s"
 msgstr ""
 
-msgid "调度器调用失败"
+msgid "Deploy v2 test instance (port 3004)"
 msgstr ""
 
-msgid "迁移完成"
+msgid "Verify test instance"
 msgstr ""
 
-msgid "迁移已完成。旧版 v1 已归档，可在版本管理中查看。"
+msgid "Switch job started"
 msgstr ""
 
-msgid "迁移按官方推荐路线执行：v1 导出备份包 → 全新部署 v2 试运行 → 在 v2 界面导入备份 → 确认无误后切换正式端口。整个过程中 v1 的数据目录只读不动。"
+msgid "Switch failed: %s"
 msgstr ""
 
-msgid "运行中"
+msgid "Switch to production port"
 msgstr ""
 
-msgid "运行模式"
+msgid "Finish (archive v1)"
 msgstr ""
 
-msgid "运行状态"
+msgid "Abort and restore v1"
 msgstr ""
 
-msgid "通道：%s"
+msgid "Deploying, please wait…"
 msgstr ""
 
-msgid "部署 v2 试运行"
+msgid "Migration complete. The legacy v1 has been archived; see the version manager."
 msgstr ""
 
-msgid "部署 v2 试运行（端口 3004）"
+msgid "Detected legacy v1"
 msgstr ""
 
-msgid "部署中，请稍候…"
+msgid "Port"
 msgstr ""
 
-msgid "部署任务已启动"
+msgid "Backup archive"
 msgstr ""
 
-msgid "部署失败"
+msgid "Uploaded"
 msgstr ""
 
-msgid "部署失败：%s"
+msgid "Not uploaded"
 msgstr ""
 
-msgid "配置已渲染，服务已重启"
+msgid "Please open "
 msgstr ""
 
-msgid "重启服务"
+msgid ", sign in to the fresh v2 with the default account admin@sun.cc / 12345678, then import the uploaded v1 backup under \"System Settings → Backup & Restore\". After verifying the content, return here and click \"Verify test instance\"."
 msgstr ""
 
-msgid "预发布"
+msgid "Emergency actions"
 msgstr ""
 
-msgid "验证失败"
+msgid "To temporarily fall back to v1 when v2 misbehaves (only while v1 has not been cleaned up):"
 msgstr ""
 
-msgid "验证试运行实例"
+msgid "Switched to v1 compat mode"
 msgstr ""
 
-msgid "（暂无日志）"
+msgid "Force back to v1"
 msgstr ""
 
-msgid "（空）"
+msgid "v1 forced mode disabled"
 msgstr ""
 
-msgid "，使用默认账号 admin@sun.cc / 12345678 登录全新 v2，然后进入「系统设置 → 备份恢复」，导入刚上传的 v1 备份包。导入完成并确认内容无误后，回到本页点击「验证试运行实例」。"
+msgid "Disable v1 forced mode"
 msgstr ""
+

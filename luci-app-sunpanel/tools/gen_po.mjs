@@ -1,22 +1,21 @@
-// gen_po.mjs -- generate .pot, zh-cn (identity) and en .po files from the
-// LuCI view source. English translations are authored in EN_MAP below.
+// gen_po.mjs -- LuCI i18n tooling for luci-app-sunpanel
 //
-// Usage: node tools/gen_po.mjs
+// The UI source strings are English (LuCI convention). ZH_MAP provides the
+// Simplified Chinese translations emitted to po/zh_Hans/sunpanel.po.
+//
+// Modes:
+//   node tools/gen_po.mjs rewrite   rewrite view JS _() strings zh -> en
+//   node tools/gen_po.mjs po        emit pot + po/zh_Hans from current JS
+//   node tools/gen_po.mjs           po (default)
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const viewSrc = fs.readFileSync(
-  path.join(root, 'htdocs/luci-static/resources/view/sunpanel.js'), 'utf8');
+const viewPath = path.join(root, 'htdocs/luci-static/resources/view/sunpanel.js');
 
-const re = /_\(\s*'((?:[^'\\]|\\.)*)'\s*\)/g;
-const ids = new Set();
-let m;
-while ((m = re.exec(viewSrc)) !== null) ids.add(m[1].replace(/\\'/g, "'"));
-const list = [...ids].sort();
-
+// zh (original draft strings) -> en (canonical source strings)
 const EN_MAP = {
   '调度器调用失败': 'Dispatcher call failed',
   '正在下载': 'Downloading',
@@ -172,28 +171,34 @@ const EN_MAP = {
   '取消 v1 强制模式': 'Disable v1 forced mode'
 };
 
-const poEsc = (s) => s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n');
+const ZH_MAP = Object.fromEntries(Object.entries(EN_MAP).map(([zh, en]) => [en, zh]));
 
-function emit(entries, langHeader) {
-  const lines = [];
-  lines.push('msgid ""');
-  lines.push('msgstr ""');
-  for (const [k, v] of Object.entries(langHeader)) lines.push(`"${poEsc(k)}: ${poEsc(v)}\\n"`);
-  lines.push('');
-  for (const id of entries) {
-    lines.push(`msgid "${poEsc(id)}"`);
-    lines.push(`msgstr "${poEsc(id === '' ? '' : id)}"`);
-    lines.push('');
-  }
-  return lines.join('\n') + '\n';
+function extractIds(src) {
+  const re = /_\(\s*'((?:[^'\\]|\\.)*)'\s*\)/g;
+  const set = new Set();
+  let m;
+  while ((m = re.exec(src)) !== null) set.add(m[1].replace(/\\'/g, "'"));
+  return [...set];
 }
 
-function emitPo(entries, translations, langHeader) {
-  const lines = [];
-  lines.push('msgid ""');
-  lines.push('msgstr ""');
-  for (const [k, v] of Object.entries(langHeader)) lines.push(`"${poEsc(k)}: ${poEsc(v)}\\n"`);
-  lines.push('');
+const poEsc = (s) => s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n');
+
+function headerLines(hdr) {
+  return Object.entries(hdr).map(([k, v]) => `"${poEsc(k)}: ${poEsc(v)}\\n"`).join('\n');
+}
+
+function emitPo(entries, translations, lang) {
+  const hdr = {
+    'Project-Id-Version': 'luci-app-sunpanel 1.0.0',
+    'POT-Creation-Date': new Date().toISOString().replace('T', ' ').slice(0, 16),
+    'MIME-Version': '1.0',
+    'Content-Type': 'text/plain; charset=UTF-8',
+    'Content-Transfer-Encoding': '8bit',
+    'X-Generator': 'gen_po.mjs',
+    'Language': lang
+  };
+  if (lang === 'zh_CN') hdr['Plural-Forms'] = 'nplurals=1; plural=0;';
+  const lines = ['msgid ""', 'msgstr ""', headerLines(hdr), ''];
   let translated = 0;
   for (const id of entries) {
     const tr = translations[id] || '';
@@ -205,30 +210,44 @@ function emitPo(entries, translations, langHeader) {
   return { text: lines.join('\n') + '\n', translated };
 }
 
-const headerCommon = {
+const mode = process.argv[2] || 'po';
+
+if (mode === 'rewrite') {
+  // rewrite JS source strings: zh -> en (longest keys first to avoid overlaps)
+  let src = fs.readFileSync(viewPath, 'utf8');
+  const keys = Object.keys(EN_MAP).sort((a, b) => b.length - a.length);
+  let count = 0;
+  for (const zh of keys) {
+    const needle = `_('${zh.replace(/'/g, "\\'")}')`;
+    if (src.includes(needle)) {
+      src = src.split(needle).join(`_('${EN_MAP[zh].replace(/'/g, "\\'")}')`);
+      count++;
+    }
+  }
+  fs.writeFileSync(viewPath, src, 'utf8');
+  console.log(`rewrote ${count} strings to English source`);
+  process.exit(0);
+}
+
+const src = fs.readFileSync(viewPath, 'utf8');
+const ids = extractIds(src);
+
+// pot
+const pot = ['msgid ""', 'msgstr ""', headerLines({
   'Project-Id-Version': 'luci-app-sunpanel 1.0.0',
-  'Report-Msgid-Bugs-To': '',
-  'POT-Creation-Date': new Date().toISOString().replace('T', ' ').slice(0, 16),
-  'Language': ''
-};
-
-// .pot
-const potHeader = { ...headerCommon, 'MIME-Version': '1.0', 'Content-Type': 'text/plain; charset=UTF-8', 'Content-Transfer-Encoding': '8bit', 'X-Generator': 'gen_po.mjs' };
-const potBody = list.map((id) => `msgid "${poEsc(id)}"\nmsgstr ""\n`).join('\n');
-const pot = `msgid ""\nmsgstr ""\n${Object.entries(potHeader).map(([k, v]) => `"${poEsc(k)}: ${poEsc(v)}\\n"`).join('\n')}\n\n${potBody}`;
+  'MIME-Version': '1.0',
+  'Content-Type': 'text/plain; charset=UTF-8',
+  'Content-Transfer-Encoding': '8bit'
+}), ''];
+for (const id of ids) pot.push(`msgid "${poEsc(id)}"`, 'msgstr ""', '');
 fs.mkdirSync(path.join(root, 'po/templates'), { recursive: true });
-fs.writeFileSync(path.join(root, 'po/templates/sunpanel.pot'), pot, 'utf8');
+fs.writeFileSync(path.join(root, 'po/templates/sunpanel.pot'), pot.join('\n') + '\n', 'utf8');
 
-// zh-cn: source strings are already Chinese; keep a real po for SDK parity.
-const zh = emitPo(list, Object.fromEntries(list.map((id) => [id, id])), { ...potHeader, 'Language': 'zh_CN', 'Plural-Forms': 'nplurals=1; plural=0;' });
-fs.mkdirSync(path.join(root, 'po/zh-cn'), { recursive: true });
-fs.writeFileSync(path.join(root, 'po/zh-cn/sunpanel.po'), zh.text, 'utf8');
+// zh_Hans
+const zh = emitPo(ids, ZH_MAP, 'zh_CN');
+fs.mkdirSync(path.join(root, 'po/zh_Hans'), { recursive: true });
+fs.writeFileSync(path.join(root, 'po/zh_Hans/sunpanel.po'), zh.text, 'utf8');
 
-// en
-const en = emitPo(list, EN_MAP, { ...potHeader, 'Language': 'en', 'Plural-Forms': 'nplurals=2; plural=(n != 1);' });
-fs.mkdirSync(path.join(root, 'po/en'), { recursive: true });
-fs.writeFileSync(path.join(root, 'po/en/sunpanel.po'), en.text, 'utf8');
-
-const missing = list.filter((id) => !(id in EN_MAP));
-console.log(`strings: ${list.length}, en translated: ${en.translated}, missing: ${missing.length}`);
+const missing = ids.filter((id) => !(id in ZH_MAP));
+console.log(`strings: ${ids.length}, zh_Hans translated: ${zh.translated}, missing: ${missing.length}`);
 if (missing.length) console.log(missing.join('\n---\n'));

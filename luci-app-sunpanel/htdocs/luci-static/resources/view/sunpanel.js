@@ -27,7 +27,7 @@ function disp(action, args) {
 	return fs.exec_direct(DISPATCH, [ action ].concat(args || []), 'json')
 		.then(L.bind(function(res) {
 			if (!res || res.ok === false)
-				return Promise.reject((res && res.error) ? res.error : _('调度器调用失败'));
+				return Promise.reject((res && res.error) ? res.error : _('Dispatcher call failed'));
 			return res;
 		}, this));
 }
@@ -44,21 +44,21 @@ function fmtSize(sz) {
 
 function phaseText(phase) {
 	var map = {
-		download: _('正在下载'),
-		verify: _('正在校验 SHA256'),
-		extract: _('正在解包'),
-		switch: _('正在切换版本'),
-		done: _('完成'),
-		failed: _('失败'),
-		deploying: _('正在部署 v2 试运行实例'),
-		deployed: _('v2 试运行中，请在 v2 界面导入备份'),
-		'verified': _('试运行验证通过'),
-		switched: _('v2 已切换为正式实例'),
-		'deploy-failed': _('部署失败'),
-		'verify-failed': _('验证失败'),
-		'switch-failed': _('切换失败'),
-		aborted: _('已中止，v1 已恢复服务'),
-		'done-mig': _('迁移完成')
+		download: _('Downloading'),
+		verify: _('Verifying SHA256'),
+		extract: _('Extracting'),
+		switch: _('Switching version'),
+		done: _('Done'),
+		failed: _('Failed'),
+		deploying: _('Deploying v2 test instance'),
+		deployed: _('v2 test instance running, import the backup in the v2 UI now'),
+		'verified': _('Test instance verified'),
+		switched: _('v2 switched to the primary instance'),
+		'deploy-failed': _('Deployment failed'),
+		'verify-failed': _('Verification failed'),
+		'switch-failed': _('Switch failed'),
+		aborted: _('Aborted, v1 is serving again'),
+		'done-mig': _('Migration complete')
 	};
 	return map[phase] || phase || '-';
 }
@@ -98,31 +98,31 @@ return view.extend({
 		var container = E('div', { 'class': 'cbi-map' });
 
 		/* ---------- tabs ---------- */
-		var tabStatus = E('div', { 'data-tab': 'status', 'data-tab-title': _('服务状态') });
-		var tabSettings = E('div', { 'data-tab': 'settings', 'data-tab-title': _('基础设置') });
-		var tabVersion = E('div', { 'data-tab': 'version', 'data-tab-title': _('版本管理') });
-		var tabMigrate = E('div', { 'data-tab': 'migrate', 'data-tab-title': _('v1 迁移向导') });
+		var tabStatus = E('div', { 'data-tab': 'status', 'data-tab-title': _('Service status') });
+		var tabSettings = E('div', { 'data-tab': 'settings', 'data-tab-title': _('Basic settings') });
+		var tabVersion = E('div', { 'data-tab': 'version', 'data-tab-title': _('Version manager') });
+		var tabMigrate = E('div', { 'data-tab': 'migrate', 'data-tab-title': _('v1 migration wizard') });
 		var tabs = E('div', {}, [ tabStatus, tabSettings, tabVersion, tabMigrate ]);
 		container.appendChild(tabs);
 
 		/* ================= status tab ================= */
-		var statusBox = E('div', {}, E('em', {}, _('加载中…')));
+		var statusBox = E('div', {}, E('em', {}, _('Loading…')));
 		tabStatus.appendChild(E('div', { 'class': 'cbi-section' }, [
-			E('div', { 'class': 'cbi-section-title' }, [ _('运行状态') ]),
+			E('div', { 'class': 'cbi-section-title' }, [ _('Status') ]),
 			statusBox
 		]));
 
-		var logBox = E('pre', { 'class': 'ucli', 'style': 'max-height:300px; overflow:auto' }, [ _('（空）') ]);
+		var logBox = E('pre', { 'class': 'ucli', 'style': 'max-height:300px; overflow:auto' }, [ _('(empty)') ]);
 		var logBtn = E('button', {
 			'class': 'btn cbi-button',
 			'click': ui.createHandlerFn(this, function() {
 				return disp('logs', [ 'service', '60' ]).then(function(res) {
-					logBox.textContent = res.log || _('（空）');
+					logBox.textContent = res.log || _('(empty)');
 				}).catch(function(e) { ui.addNotification(null, E('p', {}, [ e ])); });
 			})
-		}, [ _('刷新服务日志') ]);
+		}, [ _('Refresh service log') ]);
 		tabStatus.appendChild(E('div', { 'class': 'cbi-section' }, [
-			E('div', { 'class': 'cbi-section-title' }, [ _('服务日志') ]),
+			E('div', { 'class': 'cbi-section-title' }, [ _('Service log') ]),
 			logBtn,
 			E('div', { 'style': 'margin-top:.5em' }, [ logBox ])
 		]));
@@ -140,7 +140,7 @@ return view.extend({
 		/* ================= migrate tab ================= */
 		var migrateBox = E('div', {});
 		tabMigrate.appendChild(E('div', { 'class': 'alert alert-info' }, [
-			E('p', {}, [ _('迁移按官方推荐路线执行：v1 导出备份包 → 全新部署 v2 试运行 → 在 v2 界面导入备份 → 确认无误后切换正式端口。整个过程中 v1 的数据目录只读不动。') ])
+			E('p', {}, [ _('Migration follows the officially recommended path: export a v1 backup, deploy a fresh v2 test instance, import the backup in the v2 UI, then switch to the production port after verification. The v1 data directory stays read-only throughout.') ])
 		]));
 		tabMigrate.appendChild(migrateBox);
 		this.renderMigrateTab(migrateBox, info, migState);
@@ -172,26 +172,26 @@ return view.extend({
 
 	renderStatusBox: function(box, info) {
 		var modeText = {
-			v2: _('v2 正式运行'),
-			legacy: _('v1 兼容模式（等待迁移）'),
-			'legacy-forced': _('v1 强制模式（应急回退）'),
-			none: _('未安装')
+			v2: _('v2 running'),
+			legacy: _('v1 compat mode (pending migration)'),
+			'legacy-forced': _('v1 forced mode (emergency fallback)'),
+			none: _('Not installed')
 		};
 		var openLink = E('a', {
 			'href': 'http://' + window.location.hostname + ':' + info.port + '/',
 			'target': '_blank',
 			'class': 'btn cbi-button cbi-button-action',
 			'style': 'margin-left:.5em'
-		}, [ _('打开面板') ]);
+		}, [ _('Open panel') ]);
 
 		var rows = [
-			[ _('运行状态'), (info.running ? badge(_('运行中'), 'label-success') : badge(_('已停止'), 'label-danger')) ],
-			[ _('运行模式'), modeText[info.mode] || info.mode ],
-			[ _('已安装版本'), info.installed_version || '-' ],
-			[ _('监听端口'), info.port ],
-			[ _('开机自启'), info.service_enabled ? _('是') : _('否') ],
-			[ _('程序目录'), info.app_dir ],
-			[ _('数据目录'), info.data_dir ],
+			[ _('Status'), (info.running ? badge(_('Running'), 'label-success') : badge(_('Stopped'), 'label-danger')) ],
+			[ _('Mode'), modeText[info.mode] || info.mode ],
+			[ _('Installed version'), info.installed_version || '-' ],
+			[ _('Listen port'), info.port ],
+			[ _('Autostart'), info.service_enabled ? _('Yes') : _('No') ],
+			[ _('Program directory'), info.app_dir ],
+			[ _('Data directory'), info.data_dir ],
 			[ '', openLink ]
 		];
 		box.innerHTML = '';
@@ -201,56 +201,56 @@ return view.extend({
 	buildSettings: function() {
 		var m, s, o;
 
-		m = new form.Map('sunpanel', _('Sun-Panel 基础配置'));
+		m = new form.Map('sunpanel', _('Sun-Panel basic configuration'));
 
-		s = m.section(form.NamedSection, 'sunpanel', 'sunpanel', _('全局设置'));
+		s = m.section(form.NamedSection, 'sunpanel', 'sunpanel', _('Global settings'));
 		s.addremove = false;
 
-		o = s.option(form.Flag, 'enabled', _('启用服务'));
+		o = s.option(form.Flag, 'enabled', _('Enable service'));
 		o.default = o.enabled;
 		o.rmempty = false;
 
-		o = s.option(form.Value, 'port', _('HTTP 端口'));
+		o = s.option(form.Value, 'port', _('HTTP port'));
 		o.datatype = 'port';
 		o.rmempty = false;
 
-		o = s.option(form.Value, 'https_port', _('HTTPS 端口'));
+		o = s.option(form.Value, 'https_port', _('HTTPS port'));
 		o.datatype = 'port';
 
-		o = s.option(form.Value, 'listen', _('监听地址'));
+		o = s.option(form.Value, 'listen', _('Listen address'));
 		o.datatype = 'ipaddr';
 		o.placeholder = '0.0.0.0';
 
-		o = s.option(form.Value, 'token_expires', _('Token 有效期（小时）'));
+		o = s.option(form.Value, 'token_expires', _('Token lifetime (hours)'));
 		o.datatype = 'uinteger';
 
-		o = s.option(form.Value, 'data_dir', _('数据目录'));
+		o = s.option(form.Value, 'data_dir', _('Data directory'));
 		o.rmempty = false;
-		o.description = _('包含 conf / database / uploads / runtime / custom / micro_app，建议放在大容量分区');
+		o.description = _('Contains conf / database / uploads / runtime / custom / micro_app; keep it on a large partition');
 
-		o = s.option(form.Value, 'app_dir', _('程序目录'));
+		o = s.option(form.Value, 'app_dir', _('Program directory'));
 		o.rmempty = false;
-		o.description = _('sun-panel 主程序与 web 前端所在目录，由版本管理功能维护');
+		o.description = _('Directory holding the sun-panel binary and web assets, managed by the version manager');
 
-		o = s.option(form.Flag, 'manage_conf', _('由 LuCI 管理 conf.ini'));
+		o = s.option(form.Flag, 'manage_conf', _('Manage conf.ini from LuCI'));
 		o.default = o.enabled;
-		o.description = _('开启后每次启动按上方配置重新生成 conf/conf.ini；关闭则仅首次生成，保留手工修改');
+		o.description = _('When enabled, conf/conf.ini is regenerated from these options at every service start; when disabled it is only created once and manual edits survive');
 
-		o = s.option(form.ListValue, 'channel', _('更新通道'));
-		o.value('stable', _('稳定版（正式 release）'));
-		o.value('beta', _('测试版（v2 beta 预发布）'));
-		o.description = _('当前 v2 正式版尚未发布，跟随 v2 需选择测试版通道');
+		o = s.option(form.ListValue, 'channel', _('Update channel'));
+		o.value('stable', _('Stable (official releases)'));
+		o.value('beta', _('Beta (v2 pre-releases)'));
+		o.description = _('No stable v2 release exists yet; choose beta to follow v2');
 
-		o = s.option(form.Value, 'mirror', _('GitHub 加速前缀'));
-		o.placeholder = _('留空直连，例如 https://ghfast.top');
-		o.description = _('下载 release 资产失败时可配置加速站前缀');
+		o = s.option(form.Value, 'mirror', _('GitHub mirror prefix'));
+		o.placeholder = _('Empty for direct connection, e.g. https://ghfast.top');
+		o.description = _('Configure a mirror prefix when release downloads fail');
 
-		o = s.option(form.Value, 'proxy', _('下载代理'));
-		o.placeholder = _('留空不使用，例如 http://127.0.0.1:7890');
+		o = s.option(form.Value, 'proxy', _('Download proxy'));
+		o.placeholder = _('Empty to disable, e.g. http://127.0.0.1:7890');
 
 		o = s.option(form.DummyValue, '_applyhint', ' ');
 		o.cfgvalue = function() {
-			return E('em', {}, _('保存并应用后，若修改了端口等参数需重启服务才能生效。'));
+			return E('em', {}, _('After Save & Apply a service restart is required for port changes to take effect.'));
 		};
 
 		var self = this;
@@ -263,7 +263,7 @@ return view.extend({
 						'click': ui.createHandlerFn(self, function(ev) {
 							return self.restartService(ev);
 						})
-					}, [ _('重启服务') ])
+					}, [ _('Restart service') ])
 				])
 			]);
 			return wrap;
@@ -273,12 +273,12 @@ return view.extend({
 	restartService: function(ev) {
 		return fs.exec_direct(DISPATCH, [ 'conf-render' ], 'json').then(function(res) {
 			if (!res.ok)
-				throw (res.error || _('conf.ini 渲染失败'));
+				throw (res.error || _('conf.ini rendering failed'));
 			return callSetInit('sunpanel', 'restart');
 		}).then(function() {
-			ui.addTimeLimitedNotification(null, E('p', {}, [ _('配置已渲染，服务已重启') ]), 4000);
+			ui.addTimeLimitedNotification(null, E('p', {}, [ _('Configuration rendered, service restarted') ]), 4000);
 		}).catch(function(e) {
-			ui.addNotification(null, E('p', {}, [ _('操作失败：%s').format(e) ]));
+			ui.addNotification(null, E('p', {}, [ _('Operation failed: %s').format(e) ]));
 		});
 	},
 
@@ -289,13 +289,13 @@ return view.extend({
 		var localReleases = E('div', {});
 
 		box.appendChild(E('div', { 'class': 'cbi-section' }, [
-			E('div', { 'class': 'cbi-section-title' }, [ _('检查更新') ]),
+			E('div', { 'class': 'cbi-section-title' }, [ _('Check for updates') ]),
 			E('p', {}, [
-				_('当前版本：%s').format(info.installed_version || _('未安装')),
+				_('Current version: %s').format(info.installed_version || _('Not installed')),
 				' ',
-				_('架构：%s').format(info.arch),
+				_('Architecture: %s').format(info.arch),
 				' ',
-				_('通道：%s').format(info.channel == 'beta' ? _('测试版') : _('稳定版'))
+				_('Channel: %s').format(info.channel == 'beta' ? _('Beta') : _('Stable'))
 			]),
 			E('button', {
 				'class': 'btn cbi-button cbi-button-action',
@@ -305,33 +305,33 @@ return view.extend({
 					return disp('check-update').then(function(res) {
 						self.showCheckResult(checkResult, res);
 					}).catch(function(e) {
-						ui.addNotification(null, E('p', {}, [ _('检查失败：%s').format(e) ]));
+						ui.addNotification(null, E('p', {}, [ _('Check failed: %s').format(e) ]));
 					}).finally(function() {
 						ev.target.disabled = false;
 					});
 				})
-			}, [ _('检查 GitHub 最新版本') ]),
+			}, [ _('Check latest GitHub releases') ]),
 			E('div', { 'style': 'margin-top:.8em' }, [ checkResult ])
 		]));
 
 		box.appendChild(E('div', { 'class': 'cbi-section' }, [
-			E('div', { 'class': 'cbi-section-title' }, [ _('离线安装') ]),
-			E('p', {}, [ _('从本地上传官方 release 压缩包（sun-panel_vX_linux_arm64.tar.gz），适合无法直连 GitHub 的环境。') ]),
+			E('div', { 'class': 'cbi-section-title' }, [ _('Offline install') ]),
+			E('p', {}, [ _('Upload an official release tarball from this computer (sun-panel_vX_linux_arm64.tar.gz), useful when GitHub is unreachable.') ]),
 			E('button', {
 				'class': 'btn cbi-button',
 				'click': ui.createHandlerFn(self, function(ev) {
 					return self.uploadAndInstall(ev);
 				})
-			}, [ _('上传并安装 release 包') ])
+			}, [ _('Upload and install release tarball') ])
 		]));
 
 		box.appendChild(E('div', { 'class': 'cbi-section' }, [
-			E('div', { 'class': 'cbi-section-title' }, [ _('更新进度') ]),
+			E('div', { 'class': 'cbi-section-title' }, [ _('Update progress') ]),
 			progress
 		]));
 
 		box.appendChild(E('div', { 'class': 'cbi-section' }, [
-			E('div', { 'class': 'cbi-section-title' }, [ _('本地保留的版本') ]),
+			E('div', { 'class': 'cbi-section-title' }, [ _('Locally kept versions') ]),
 			localReleases
 		]));
 
@@ -344,12 +344,12 @@ return view.extend({
 		box.innerHTML = '';
 
 		var cards = [ res.stable, res.beta ];
-		var titles = [ _('稳定通道'), _('测试通道（beta）') ];
+		var titles = [ _('Stable channel'), _('Beta channel') ];
 
 		for (var i = 0; i < cards.length; i++) {
 			var r = cards[i];
 			if (!r) {
-				box.appendChild(E('p', {}, [ '%s：%s'.format(titles[i], _('没有可用版本')) ]));
+				box.appendChild(E('p', {}, [ '%s：%s'.format(titles[i], _('No release available')) ]));
 				continue;
 			}
 			var isCurrent = (r.tag == res.current);
@@ -359,18 +359,18 @@ return view.extend({
 				'click': ui.createHandlerFn(self, function(tag, url, sha, ev) {
 					self.confirmInstall(tag, url, sha);
 				}, r.tag, r.url, r.sha256)
-			}, [ isCurrent ? _('当前版本') : _('安装此版本') ]);
+			}, [ isCurrent ? _('Current version') : _('Install this version') ]);
 
 			box.appendChild(E('div', { 'class': 'cbi-section', 'style': 'border:1px solid var(--border-color); border-radius:4px; padding:.6em; margin-bottom:.6em' }, [
 				E('p', {}, [
 					E('strong', {}, [ r.tag ]),
 					' ',
-					r.prerelease ? badge(_('预发布'), 'label-warning') : badge(_('正式版'), 'label-success'),
+					r.prerelease ? badge(_('Pre-release'), 'label-warning') : badge(_('Official release'), 'label-success'),
 					' ',
-					isCurrent ? badge(_('已安装'), 'label-info') : E('span', {}, [ '' ])
+					isCurrent ? badge(_('Installed'), 'label-info') : E('span', {}, [ '' ])
 				]),
 				E('p', {}, [
-					_('发布时间：%s　大小：%s').format((r.date || '-').slice(0, 10), fmtSize(r.size))
+					_('Released: %s  Size: %s').format((r.date || '-').slice(0, 10), fmtSize(r.size))
 				]),
 				btn
 			]));
@@ -379,14 +379,14 @@ return view.extend({
 
 	confirmInstall: function(tag, url, sha) {
 		var self = this;
-		ui.showModal(_('安装 Sun-Panel %s').format(tag), [
-			E('p', {}, [ _('安装过程会自动备份当前版本，若新版本启动异常会自动回滚。') ]),
-			E('p', {}, [ _('服务将短暂中断，确认继续？') ]),
+		ui.showModal(_('Install Sun-Panel %s').format(tag), [
+			E('p', {}, [ _('The current version is backed up automatically; the updater rolls back if the new version fails to start.') ]),
+			E('p', {}, [ _('The service restarts briefly. Continue?') ]),
 			E('div', { 'class': 'right' }, [
 				E('button', {
 					'class': 'btn',
 					'click': ui.hideModal
-				}, [ _('取消') ]),
+				}, [ _('Cancel') ]),
 				' ',
 				E('button', {
 					'class': 'btn cbi-button cbi-button-important',
@@ -394,7 +394,7 @@ return view.extend({
 						ui.hideModal();
 						return self.startUpdate(tag, url, sha);
 					})
-				}, [ _('确认安装') ])
+				}, [ _('Install') ])
 			])
 		]);
 	},
@@ -403,10 +403,10 @@ return view.extend({
 		var self = this;
 		self._jobActive = true;
 		return disp('update-start', [ tag, url, sha || '-' ]).then(function() {
-			ui.addTimeLimitedNotification(null, E('p', {}, [ _('更新任务已启动，请关注下方进度') ]), 4000);
+			ui.addTimeLimitedNotification(null, E('p', {}, [ _('Update job started, watch the progress below') ]), 4000);
 		}).catch(function(e) {
 			self._jobActive = false;
-			ui.addNotification(null, E('p', {}, [ _('启动更新失败：%s').format(e) ]));
+			ui.addNotification(null, E('p', {}, [ _('Failed to start update: %s').format(e) ]));
 		});
 	},
 
@@ -416,17 +416,17 @@ return view.extend({
 			self._jobActive = true;
 			return disp('release-import', [ '/tmp/sunpanel-upload/release.tar.gz' ]);
 		}).then(function() {
-			ui.addTimeLimitedNotification(null, E('p', {}, [ _('离线安装任务已启动') ]), 4000);
+			ui.addTimeLimitedNotification(null, E('p', {}, [ _('Offline install job started') ]), 4000);
 		}).catch(function(e) {
 			self._jobActive = false;
-			ui.addNotification(null, E('p', {}, [ _('上传或安装失败：%s').format(e) ]));
+			ui.addNotification(null, E('p', {}, [ _('Upload or install failed: %s').format(e) ]));
 		});
 	},
 
 	renderUpdateStatus: function(box, st) {
 		if (st == null || st.phase == null || st.phase == '') {
 			box.innerHTML = '';
-			box.appendChild(E('em', {}, [ _('暂无更新任务') ]));
+			box.appendChild(E('em', {}, [ _('No update job yet') ]));
 			return;
 		}
 		if (st.phase == 'done' || st.phase == 'failed')
@@ -436,11 +436,11 @@ return view.extend({
 		box.innerHTML = '';
 		box.appendChild(E('div', { 'class': 'alert ' + cls }, [
 			E('p', {}, [
-				E('strong', {}, [ '%s：%s'.format(_('状态'), phaseText(st.phase)) ]),
-				st.version ? '　' + _('版本：%s').format(st.version) : E('span', {}, [ '' ])
+				E('strong', {}, [ '%s：%s'.format(_('State'), phaseText(st.phase)) ]),
+				st.version ? '　' + _('Version: %s').format(st.version) : E('span', {}, [ '' ])
 			]),
 			st.message ? E('p', {}, [ st.message ]) : E('span', {}, [ '' ]),
-			E('pre', { 'style': 'max-height:200px; overflow:auto; margin:.4em 0 0 0' }, [ st.log || _('（暂无日志）') ])
+			E('pre', { 'style': 'max-height:200px; overflow:auto; margin:.4em 0 0 0' }, [ st.log || _('(no log yet)') ])
 		]));
 	},
 
@@ -449,7 +449,7 @@ return view.extend({
 		box.innerHTML = '';
 		var rels = info.releases || [];
 		if (rels.length == 0) {
-			box.appendChild(E('em', {}, [ _('暂无历史版本') ]));
+			box.appendChild(E('em', {}, [ _('No stored versions') ]));
 			return;
 		}
 		rels.sort(function(a, b) { return (b.mtime || 0) - (a.mtime || 0); });
@@ -458,7 +458,7 @@ return view.extend({
 			var r = rels[i];
 			var isCur = (r.version == info.installed_version);
 			rows.push(E('tr', {}, [
-				E('td', {}, [ r.version, isCur ? badge(_('当前'), 'label-success') : E('span', {}, [ '' ]) ]),
+				E('td', {}, [ r.version, isCur ? badge(_('current'), 'label-success') : E('span', {}, [ '' ]) ]),
 				E('td', {}, [ fmtSize(r.size) ]),
 				E('td', {}, [
 					!isCur ? E('button', {
@@ -466,7 +466,7 @@ return view.extend({
 						'click': ui.createHandlerFn(self, function(v, ev) {
 							self.confirmRollback(v);
 						}, r.version)
-					}, [ _('回滚到此版本') ]) : E('span', {}, [ '-' ]),
+					}, [ _('Roll back to this version') ]) : E('span', {}, [ '-' ]),
 					' ',
 					!isCur ? E('button', {
 						'class': 'btn cbi-button cbi-button-negative',
@@ -477,25 +477,25 @@ return view.extend({
 								self.renderLocalReleases(box, inf);
 							});
 						}, r.version)
-					}, [ _('删除') ]) : E('span', {}, [ '' ])
+					}, [ _('Delete') ]) : E('span', {}, [ '' ])
 				])
 			]));
 		}
 		box.appendChild(E('table', { 'class': 'table' }, [
 			E('tr', { 'class': 'tr table-titles' }, [
-				E('th', {}, [ _('版本') ]),
-				E('th', {}, [ _('大小') ]),
-				E('th', {}, [ _('操作') ])
+				E('th', {}, [ _('Version') ]),
+				E('th', {}, [ _('Size') ]),
+				E('th', {}, [ _('Actions') ])
 			])
 		].concat(rows)));
 	},
 
 	confirmRollback: function(ver) {
 		var self = this;
-		ui.showModal(_('回滚到 %s').format(ver), [
-			E('p', {}, [ _('当前版本会被保留为历史版本，服务将重启并切换到 %s。').format(ver) ]),
+		ui.showModal(_('Roll back to %s').format(ver), [
+			E('p', {}, [ _('The current version is kept as a history entry; the service restarts on %s.').format(ver) ]),
 			E('div', { 'class': 'right' }, [
-				E('button', { 'class': 'btn', 'click': ui.hideModal }, [ _('取消') ]),
+				E('button', { 'class': 'btn', 'click': ui.hideModal }, [ _('Cancel') ]),
 				' ',
 				E('button', {
 					'class': 'btn cbi-button cbi-button-important',
@@ -503,13 +503,13 @@ return view.extend({
 						ui.hideModal();
 						self._jobActive = true;
 						return disp('rollback', [ ver ]).then(function() {
-							ui.addTimeLimitedNotification(null, E('p', {}, [ _('回滚任务已启动') ]), 4000);
+							ui.addTimeLimitedNotification(null, E('p', {}, [ _('Rollback job started') ]), 4000);
 						}).catch(function(e) {
 							self._jobActive = false;
-							ui.addNotification(null, E('p', {}, [ _('回滚失败：%s').format(e) ]));
+							ui.addNotification(null, E('p', {}, [ _('Rollback failed: %s').format(e) ]));
 						});
 					})
-				}, [ _('确认回滚') ])
+				}, [ _('Roll back') ])
 			])
 		]);
 	},
@@ -521,12 +521,12 @@ return view.extend({
 
 		/* step indicator */
 		var steps = [
-			[ '', _('检测 v1') ],
-			[ 'backup', _('上传备份包') ],
-			[ 'deployed', _('部署 v2 试运行') ],
-			[ 'verified', _('导入并验证') ],
-			[ 'switched', _('切换正式端口') ],
-			[ 'done', _('完成清理') ]
+			[ '', _('Detect v1') ],
+			[ 'backup', _('Upload backup') ],
+			[ 'deployed', _('Deploy v2 test instance') ],
+			[ 'verified', _('Import and verify') ],
+			[ 'switched', _('Switch port') ],
+			[ 'done', _('Finish and clean up') ]
 		];
 		var stageOrder = { '': 0, backup: 1, deployed: 2, verified: 3, switched: 4, done: 5 };
 		var cur = stageOrder[stage] != null ? stageOrder[stage] : 0;
@@ -552,7 +552,7 @@ return view.extend({
 					self.renderMigrateTab(box, info, st);
 				});
 			})
-		}, [ _('检测旧版 v1') ]);
+		}, [ _('Detect legacy v1') ]);
 
 		var bUpload = E('button', {
 			'class': 'btn cbi-button cbi-button-action',
@@ -566,23 +566,23 @@ return view.extend({
 						self.renderMigrateTab(box, info, st);
 					});
 				}).catch(function(e) {
-					ui.addNotification(null, E('p', {}, [ _('上传失败：%s').format(e) ]));
+					ui.addNotification(null, E('p', {}, [ _('Upload failed: %s').format(e) ]));
 				});
 			})
-		}, [ _('上传 v1 备份包 (zip)') ]);
+		}, [ _('Upload v1 backup (zip)') ]);
 
 		var bDeploy = E('button', {
 			'class': 'btn cbi-button cbi-button-action',
 			'click': ui.createHandlerFn(self, function(ev) {
 				self._migratePolling = true;
 				return disp('migrate', [ 'deploy' ]).then(function() {
-					ui.addTimeLimitedNotification(null, E('p', {}, [ _('部署任务已启动') ]), 4000);
+					ui.addTimeLimitedNotification(null, E('p', {}, [ _('Deployment job started') ]), 4000);
 				}).catch(function(e) {
 					self._migratePolling = false;
-					ui.addNotification(null, E('p', {}, [ _('部署失败：%s').format(e) ]));
+					ui.addNotification(null, E('p', {}, [ _('Deployment failed: %s').format(e) ]));
 				});
 			})
-		}, [ _('部署 v2 试运行（端口 3004）') ]);
+		}, [ _('Deploy v2 test instance (port 3004)') ]);
 
 		var bVerify = E('button', {
 			'class': 'btn cbi-button',
@@ -590,19 +590,19 @@ return view.extend({
 				self._migratePolling = true;
 				return disp('migrate', [ 'verify' ]);
 			})
-		}, [ _('验证试运行实例') ]);
+		}, [ _('Verify test instance') ]);
 
 		var bSwitch = E('button', {
 			'class': 'btn cbi-button cbi-button-important',
 			'click': ui.createHandlerFn(self, function(ev) {
 				self._migratePolling = true;
 				return disp('migrate', [ 'switch' ]).then(function() {
-					ui.addTimeLimitedNotification(null, E('p', {}, [ _('切换任务已启动') ]), 4000);
+					ui.addTimeLimitedNotification(null, E('p', {}, [ _('Switch job started') ]), 4000);
 				}).catch(function(e) {
-					ui.addNotification(null, E('p', {}, [ _('切换失败：%s').format(e) ]));
+					ui.addNotification(null, E('p', {}, [ _('Switch failed: %s').format(e) ]));
 				});
 			})
-		}, [ _('切换到正式端口') ]);
+		}, [ _('Switch to production port') ]);
 
 		var bFinish = E('button', {
 			'class': 'btn cbi-button cbi-button-action',
@@ -610,7 +610,7 @@ return view.extend({
 				self._migratePolling = true;
 				return disp('migrate', [ 'finish' ]);
 			})
-		}, [ _('完成清理（归档 v1）') ]);
+		}, [ _('Finish (archive v1)') ]);
 
 		var bAbort = E('button', {
 			'class': 'btn cbi-button cbi-button-negative',
@@ -619,7 +619,7 @@ return view.extend({
 					self._migratePolling = true;
 				});
 			})
-		}, [ _('中止并恢复 v1 服务') ]);
+		}, [ _('Abort and restore v1') ]);
 
 		var row = E('div', { 'style': 'display:flex; flex-wrap:wrap; gap:.5em' });
 
@@ -636,7 +636,7 @@ return view.extend({
 			}
 		}
 		else if (stage == 'deploying') {
-			row.appendChild(E('em', {}, [ _('部署中，请稍候…') ]));
+			row.appendChild(E('em', {}, [ _('Deploying, please wait…') ]));
 		}
 		else if (stage == 'deployed' || stage == 'verify-failed') {
 			row.appendChild(bVerify);
@@ -650,7 +650,7 @@ return view.extend({
 			row.appendChild(bFinish);
 		}
 		else if (stage == 'done') {
-			box.appendChild(E('div', { 'class': 'alert alert-success' }, [ _('迁移已完成。旧版 v1 已归档，可在版本管理中查看。') ]));
+			box.appendChild(E('div', { 'class': 'alert alert-success' }, [ _('Migration complete. The legacy v1 has been archived; see the version manager.') ]));
 			box.appendChild(row);
 			return;
 		}
@@ -663,13 +663,13 @@ return view.extend({
 		/* v1 detail box */
 		if (det && det.found == '1') {
 			box.appendChild(E('div', { 'class': 'cbi-section', 'style': 'margin-top:1em' }, [
-				E('div', { 'class': 'cbi-section-title' }, [ _('检测到的旧版 v1') ]),
+				E('div', { 'class': 'cbi-section-title' }, [ _('Detected legacy v1') ]),
 				kvTable([
-					[ _('版本'), det.version || 'unknown' ],
-					[ _('数据目录'), det.dir ],
-					[ _('端口'), det.port ],
-					[ _('运行中'), det.running == '1' ? _('是') : _('否') ],
-					[ _('备份包'), det.backup_ready == '1' ? _('已上传') : _('未上传') ]
+					[ _('Version'), det.version || 'unknown' ],
+					[ _('Data directory'), det.dir ],
+					[ _('Port'), det.port ],
+					[ _('Running'), det.running == '1' ? _('Yes') : _('No') ],
+					[ _('Backup archive'), det.backup_ready == '1' ? _('Uploaded') : _('Not uploaded') ]
 				])
 			]));
 		}
@@ -678,37 +678,37 @@ return view.extend({
 		if (stage == 'deployed') {
 			box.appendChild(E('div', { 'class': 'cbi-section' }, [
 				E('p', {}, [
-					_('请打开'),
+					_('Please open '),
 					' ',
 					E('a', { 'href': 'http://' + window.location.hostname + ':3004/', 'target': '_blank' }, [ 'http://' + window.location.hostname + ':3004/' ]),
-					_('，使用默认账号 admin@sun.cc / 12345678 登录全新 v2，然后进入「系统设置 → 备份恢复」，导入刚上传的 v1 备份包。导入完成并确认内容无误后，回到本页点击「验证试运行实例」。')
+					_(', sign in to the fresh v2 with the default account admin@sun.cc / 12345678, then import the uploaded v1 backup under "System Settings → Backup & Restore". After verifying the content, return here and click "Verify test instance".')
 				])
 			]));
 		}
 
 		/* emergency controls */
 		box.appendChild(E('div', { 'class': 'cbi-section', 'style': 'margin-top:1.5em' }, [
-			E('div', { 'class': 'cbi-section-title' }, [ _('应急操作') ]),
-			E('p', {}, [ _('若 v2 出现问题需要临时回到 v1（仅当 v1 尚未被清理时可用）：') ]),
+			E('div', { 'class': 'cbi-section-title' }, [ _('Emergency actions') ]),
+			E('p', {}, [ _('To temporarily fall back to v1 when v2 misbehaves (only while v1 has not been cleaned up):') ]),
 			E('button', {
 				'class': 'btn cbi-button cbi-button-negative',
 				'click': ui.createHandlerFn(self, function(ev) {
 					return disp('legacy-force', [ 'on' ]).then(function() {
-						ui.addTimeLimitedNotification(null, E('p', {}, [ _('已切换到 v1 兼容模式') ]), 4000);
+						ui.addTimeLimitedNotification(null, E('p', {}, [ _('Switched to v1 compat mode') ]), 4000);
 					}).catch(function(e) {
-						ui.addNotification(null, E('p', {}, [ _('操作失败：%s').format(e) ]));
+						ui.addNotification(null, E('p', {}, [ _('Operation failed: %s').format(e) ]));
 					});
 				})
-			}, [ _('强制回到 v1') ]),
+			}, [ _('Force back to v1') ]),
 			' ',
 			E('button', {
 				'class': 'btn cbi-button',
 				'click': ui.createHandlerFn(self, function(ev) {
 					return disp('legacy-force', [ 'off' ]).then(function() {
-						ui.addTimeLimitedNotification(null, E('p', {}, [ _('已取消 v1 强制模式') ]), 4000);
+						ui.addTimeLimitedNotification(null, E('p', {}, [ _('v1 forced mode disabled') ]), 4000);
 					});
 				})
-			}, [ _('取消 v1 强制模式') ])
+			}, [ _('Disable v1 forced mode') ])
 		]));
 	}
 });
