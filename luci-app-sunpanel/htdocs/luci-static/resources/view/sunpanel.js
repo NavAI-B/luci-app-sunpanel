@@ -168,7 +168,7 @@ return view.extend({
 		// settings tab: form.Map#render is asynchronous; init tabs once present
 		return this.buildSettings().then(function(settingsNode) {
 			tabSettings.appendChild(settingsNode);
-			ui.tabs.initTabElements(container);
+			ui.tabs.initTabGroup(tabs.childNodes);
 			return container;
 		});
 	},
