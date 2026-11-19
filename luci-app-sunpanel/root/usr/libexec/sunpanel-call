@@ -222,13 +222,15 @@ function act_check_update() {
 		};
 		if (type(asset.digest) == 'string' && index(asset.digest, 'sha256:') == 0)
 			e.sha256 = substr(asset.digest, 7);
-		if (e.prerelease) {
+		// channel = major version line: v2.* -> V2 list, everything else -> V1 list
+		let isV2 = (substr(lc(tag), 0, 3) == 'v2.');
+		if (isV2) {
 			if (beta == null)
 				beta = e;
 			if (length(beta_list) < 15)
 				push(beta_list, e);
 		}
-		else {
+		else if (!e.prerelease) {
 			if (stable == null)
 				stable = e;
 			if (length(stable_list) < 15)

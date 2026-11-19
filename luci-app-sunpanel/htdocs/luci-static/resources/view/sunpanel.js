@@ -141,16 +141,15 @@ return view.extend({
 			[ _('Listen port'), info.port ],
 			[ _('Autostart'), info.service_enabled ? _('Yes') : _('No') ],
 			[ _('Program directory'), info.app_dir ],
-			[ _('Data directory'), info.data_dir ]
+			[ _('Data directory'), info.data_dir ],
+			[ '', openLink ]
 		]));
 
-		box.appendChild(E('div', { 'style': 'margin-top:1em; text-align:center' }, [
-			E('a', {
-				'href': 'http://' + window.location.hostname + ':' + info.port + '/',
-				'target': '_blank',
-				'class': 'btn cbi-button cbi-button-action'
-			}, [ _('Open panel') ])
-		]));
+		var openLink = E('a', {
+			'href': 'http://' + window.location.hostname + ':' + info.port + '/',
+			'target': '_blank',
+			'class': 'btn cbi-button cbi-button-action'
+		}, [ _('Open panel') ]);
 		box.appendChild(E('div', { 'style': 'margin-top:2em' }));
 	},
 
@@ -294,31 +293,26 @@ return view.extend({
 		if (self._jobActive || !self._lastCheck)
 			updateBtn.disabled = 'disabled';
 
-		box.appendChild(E('div', { 'class': 'cbi-section' }, [
-			kvTable([
-				[ _('Program directory'), appDirInput ],
-				[ _('Update channel'), chSel ],
-				[ _('GitHub mirror prefix'), mirrorInput ],
-				[ _('Download proxy'), proxyInput ],
-				[ '', E('button', {
-					'class': 'btn cbi-button cbi-button-action',
-					'click': ui.createHandlerFn(self, function() {
-						return self.saveReleaseSettings(box, {
-							app_dir: appDirInput.value,
-							channel: chSel.value,
-							mirror: mirrorInput.value,
-							proxy: proxyInput.value
-						});
-					})
-				}, [ _('Save settings') ]) ]
-			]),
-			E('div', { 'style': 'margin-top:2em' }),
-			kvTable([
-				[ _('Installed version'), (info.installed_version || '-') + '　', checkBtn ],
-				[ _('Latest version'), latestText ],
-				[ _('Select version'), selWidget ],
-				[ '', updateBtn ]
-			])
+		box.appendChild(kvTable([
+			[ _('Program directory'), appDirInput ],
+			[ _('Update channel'), chSel ],
+			[ _('GitHub mirror prefix'), mirrorInput ],
+			[ _('Download proxy'), proxyInput ],
+			[ '', E('button', {
+				'class': 'btn cbi-button cbi-button-action',
+				'click': ui.createHandlerFn(self, function() {
+					return self.saveReleaseSettings(box, {
+						app_dir: appDirInput.value,
+						channel: chSel.value,
+						mirror: mirrorInput.value,
+						proxy: proxyInput.value
+					});
+				})
+			}, [ _('Save settings') ]) ],
+			[ _('Installed version'), info.installed_version || '-' ],
+			[ _('Latest version'), latestText ],
+			[ _('Select version'), selWidget ],
+			[ '', updateBtn, ' ', checkBtn ]
 		]));
 	},
 
