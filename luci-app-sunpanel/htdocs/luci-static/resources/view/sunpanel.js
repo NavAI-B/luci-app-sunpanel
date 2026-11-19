@@ -118,7 +118,7 @@ return view.extend({
 					return disp('info').then(function(inf) {
 						self._info = inf;
 						self.renderVersionTab(versionBox, inf);
-						ui.addTimeLimitedNotification(null, E('p', {}, [ _('Update installed successfully') ]), 6000);
+						ui.addNotification(null, E('p', {}, [ _('Update installed successfully') ]));
 					});
 				}
 				if (st.phase == 'failed') {
@@ -144,7 +144,7 @@ return view.extend({
 			[ _('Data directory'), info.data_dir ]
 		]));
 
-		box.appendChild(E('div', { 'style': 'margin-top:1em' }, [
+		box.appendChild(E('div', { 'style': 'margin-top:1em; text-align:center' }, [
 			E('a', {
 				'href': 'http://' + window.location.hostname + ':' + info.port + '/',
 				'target': '_blank',
@@ -174,12 +174,6 @@ return view.extend({
 		var listenInput = textInput(uciGet('listen', '0.0.0.0'));
 		var tokenInput = textInput(uciGet('token_expires', '168'));
 		var dataDirInput = textInput(uciGet('data_dir', '/mnt/mmcblk0p1/sun-panel/data'));
-		var manageCb = E('input', {
-			'type': 'checkbox', 'class': 'cbi-input-checkbox',
-			'checked': uciGet('manage_conf', '1') == '1' ? 'checked' : null
-		});
-
-		box.appendChild(E('p', {}, [ _('Service start/stop is controlled by the enable checkbox: save to apply.') ]));
 
 		box.appendChild(kvTable([
 			[ _('Enable service'), enabledCb ],
@@ -188,7 +182,6 @@ return view.extend({
 			[ _('Listen address'), listenInput ],
 			[ _('Token lifetime (hours)'), tokenInput ],
 			[ _('Data directory'), dataDirInput ],
-			[ _('Manage conf.ini from LuCI'), manageCb ],
 			[ '', E('button', {
 				'class': 'btn cbi-button cbi-button-action',
 				'click': ui.createHandlerFn(self, function() {
@@ -198,8 +191,7 @@ return view.extend({
 						https_port: httpsInput.value,
 						listen: listenInput.value,
 						token_expires: tokenInput.value,
-						data_dir: dataDirInput.value,
-						manage_conf: manageCb.checked ? '1' : '0'
+						data_dir: dataDirInput.value
 					});
 				})
 			}, [ _('Save settings') ]) ]
@@ -222,7 +214,7 @@ return view.extend({
 			return disp('info');
 		}).then(function(inf) {
 			self._info = inf;
-			ui.addTimeLimitedNotification(null, E('p', {}, [ _('Settings saved') ]), 3000);
+			ui.addNotification(null, E('p', {}, [ _('Settings saved') ]));
 		}).catch(function(e) {
 			ui.addNotification(null, E('p', {}, [ _('Operation failed: %s').format(e) ]));
 		});
@@ -234,7 +226,7 @@ return view.extend({
 				throw (res.error || _('conf.ini rendering failed'));
 			return callSetInit('sunpanel', 'restart');
 		}).then(function() {
-			ui.addTimeLimitedNotification(null, E('p', {}, [ _('Configuration rendered, service restarted') ]), 4000);
+			ui.addNotification(null, E('p', {}, [ _('Configuration rendered, service restarted') ]));
 		}).catch(function(e) {
 			ui.addNotification(null, E('p', {}, [ _('Operation failed: %s').format(e) ]));
 		});
@@ -255,8 +247,8 @@ return view.extend({
 		} catch (e) {}
 		var proxyInput = textInput(proxyVal, _('Empty to disable, e.g. http://127.0.0.1:7890'));
 		var chSel = E('select', { 'class': 'cbi-input-select', 'style': 'width:auto' }, [
-			E('option', { 'value': 'stable', 'selected': (channel(info) == 'stable') ? 'selected' : null }, [ _('Stable (v1.x line)') ]),
-			E('option', { 'value': 'beta', 'selected': (channel(info) == 'beta') ? 'selected' : null }, [ _('Beta (v2 line)') ])
+			E('option', { 'value': 'stable', 'selected': (channel(info) == 'stable') ? 'selected' : null }, [ 'V1' ]),
+			E('option', { 'value': 'beta', 'selected': (channel(info) == 'beta') ? 'selected' : null }, [ 'V2' ])
 		]);
 
 		var checkBtn = E('button', {
@@ -288,6 +280,8 @@ return view.extend({
 		var updateBtn = E('button', {
 			'class': 'btn cbi-button cbi-button-action',
 			'click': ui.createHandlerFn(self, function(ev) {
+				if (self._jobActive)
+					return;
 				var sel = self._verSel;
 				var idx = sel ? +sel.value : -1;
 				var chk2 = self._lastCheck;
@@ -296,8 +290,8 @@ return view.extend({
 				if (e)
 					self.confirmInstall(e.tag, e.url, e.sha256);
 			})
-		}, [ _('Update version') ]);
-		if (!self._lastCheck)
+		}, [ self._jobActive ? _('Updating…') : _('Update version') ]);
+		if (self._jobActive || !self._lastCheck)
 			updateBtn.disabled = 'disabled';
 
 		box.appendChild(E('div', { 'class': 'cbi-section' }, [
@@ -357,7 +351,7 @@ return view.extend({
 		}).then(function(inf) {
 			self._info = inf;
 			self.renderVersionTab(box, inf);
-			ui.addTimeLimitedNotification(null, E('p', {}, [ _('Release source settings saved') ]), 3000);
+			ui.addNotification(null, E('p', {}, [ _('Release source settings saved') ]));
 		}).catch(function(e) {
 			ui.addNotification(null, E('p', {}, [ _('Operation failed: %s').format(e) ]));
 		});
@@ -386,7 +380,7 @@ return view.extend({
 		var self = this;
 		self._jobActive = true;
 		return disp('update-start', [ tag, url, sha || '-' ]).then(function() {
-			ui.addTimeLimitedNotification(null, E('p', {}, [ _('Update job started') ]), 4000);
+			ui.addNotification(null, E('p', {}, [ _('Update job started') ]));
 		}).catch(function(e) {
 			self._jobActive = false;
 			ui.addNotification(null, E('p', {}, [ _('Failed to start update: %s').format(e) ]));

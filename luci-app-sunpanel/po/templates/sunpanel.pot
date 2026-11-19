@@ -59,9 +59,6 @@ msgstr ""
 msgid "Open panel"
 msgstr ""
 
-msgid "Service start/stop is controlled by the enable checkbox: save to apply."
-msgstr ""
-
 msgid "Enable service"
 msgstr ""
 
@@ -75,9 +72,6 @@ msgid "Listen address"
 msgstr ""
 
 msgid "Token lifetime (hours)"
-msgstr ""
-
-msgid "Manage conf.ini from LuCI"
 msgstr ""
 
 msgid "Save settings"
@@ -101,13 +95,10 @@ msgstr ""
 msgid "Empty to disable, e.g. http://127.0.0.1:7890"
 msgstr ""
 
-msgid "Stable (v1.x line)"
-msgstr ""
-
-msgid "Beta (v2 line)"
-msgstr ""
-
 msgid "Check for updates"
+msgstr ""
+
+msgid "Updating…"
 msgstr ""
 
 msgid "Update version"

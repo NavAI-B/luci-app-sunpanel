@@ -32,7 +32,13 @@ health_ok() {
 	local port="$1" i
 	for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
 		sleep 2
-		curl -fs -m 3 "http://127.0.0.1:$port/" >/dev/null 2>&1 && return 0
+		# v2 gates its index route on browser-ish headers; favicon is UA-agnostic
+		if curl -fs -m 3 -A "Mozilla/5.0" -H "Accept: text/html" "http://127.0.0.1:$port/" >/dev/null 2>&1; then
+			return 0
+		fi
+		if curl -fs -m 3 "http://127.0.0.1:$port/favicon.ico" >/dev/null 2>&1; then
+			return 0
+		fi
 	done
 	return 1
 }
