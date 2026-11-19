@@ -5,7 +5,7 @@
 'require rpc';
 'require uci';
 'require poll';
-'require dom';
+'require form';
 
 var callGetInitList = rpc.declare({
 	object: 'luci',
@@ -130,7 +130,7 @@ return view.extend({
 		this.renderStatusBox(statusBox, info);
 
 		/* ================= settings tab ================= */
-		tabSettings.appendChild(this.buildSettings());
+		// content is appended asynchronously below (form.Map#render returns a Promise)
 
 		/* ================= version tab ================= */
 		var versionBox = E('div', {});
@@ -144,8 +144,6 @@ return view.extend({
 		]));
 		tabMigrate.appendChild(migrateBox);
 		this.renderMigrateTab(migrateBox, info, migState);
-
-		requestAnimationFrame(function() { ui.tabs.initTabElements(container); });
 
 		/* ---------- polling ---------- */
 		poll.add(L.bind(function() {
@@ -167,7 +165,12 @@ return view.extend({
 			}).catch(function() {});
 		}, this), 3);
 
-		return container;
+		// settings tab: form.Map#render is asynchronous; init tabs once present
+		return this.buildSettings().then(function(settingsNode) {
+			tabSettings.appendChild(settingsNode);
+			ui.tabs.initTabElements(container);
+			return container;
+		});
 	},
 
 	renderStatusBox: function(box, info) {
@@ -353,13 +356,14 @@ return view.extend({
 				continue;
 			}
 			var isCurrent = (r.tag == res.current);
-			var btn = E('button', {
-				'class': 'btn cbi-button cbi-button-action',
-				'disabled': isCurrent ? 'disabled' : null,
-				'click': ui.createHandlerFn(self, function(tag, url, sha, ev) {
+			var btnAttrs = { 'class': 'btn cbi-button cbi-button-action' };
+			if (isCurrent)
+				btnAttrs.disabled = 'disabled';
+			else
+				btnAttrs.click = ui.createHandlerFn(self, function(tag, url, sha, ev) {
 					self.confirmInstall(tag, url, sha);
-				}, r.tag, r.url, r.sha256)
-			}, [ isCurrent ? _('Current version') : _('Install this version') ]);
+				}, r.tag, r.url, r.sha256);
+			var btn = E('button', btnAttrs, [ isCurrent ? _('Current version') : _('Install this version') ]);
 
 			box.appendChild(E('div', { 'class': 'cbi-section', 'style': 'border:1px solid var(--border-color); border-radius:4px; padding:.6em; margin-bottom:.6em' }, [
 				E('p', {}, [

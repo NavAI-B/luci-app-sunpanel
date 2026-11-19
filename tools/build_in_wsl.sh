@@ -12,14 +12,15 @@ tar --zstd -xf sdk.tar.zst
 mv immortalwrt-sdk-* sdk
 cd sdk
 
-echo "===== [3/7] apk signing key pair (private-key.pem / public-key.pem, rules.mk convention) ====="
-# keep the pair stable once generated; public-key.pem goes to router /etc/apk/keys/
+echo "===== [3/7] apk signing key pair (persisted OUTSIDE the sdk dir so it survives re-extraction) ====="
 rm -f key-build key-build.pub
-if [ ! -f private-key.pem ]; then
-  openssl ecparam -name prime256v1 -genkey -noout -out private-key.pem
-  openssl ec -in private-key.pem -pubout -out public-key.pem
+mkdir -p /root/sdkbuild/keys
+if [ ! -f /root/sdkbuild/keys/private-key.pem ]; then
+  openssl ecparam -name prime256v1 -genkey -noout -out /root/sdkbuild/keys/private-key.pem
+  openssl ec -in /root/sdkbuild/keys/private-key.pem -pubout -out /root/sdkbuild/keys/public-key.pem
   echo "generated new signing key pair"
 fi
+cp -f /root/sdkbuild/keys/private-key.pem /root/sdkbuild/keys/public-key.pem .
 cat public-key.pem
 
 echo "===== [3.5/7] preseed pinned base feed ====="

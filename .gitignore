@@ -1,5 +1,6 @@
 downloads/
-dist/
+dist/*
+!dist/sunpanel-local.pub.pem
 lmo_base.bin
 lmo_base.po
 po_pairs.txt
