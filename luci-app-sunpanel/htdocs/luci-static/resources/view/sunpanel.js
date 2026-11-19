@@ -36,18 +36,6 @@ function fmtSize(sz) {
 	return '%d B'.format(sz);
 }
 
-function phaseText(phase) {
-	var map = {
-		download: _('Downloading'),
-		verify: _('Verifying SHA256'),
-		extract: _('Extracting'),
-		switch: _('Switching version'),
-		done: _('Done'),
-		failed: _('Failed')
-	};
-	return map[phase] || phase || '-';
-}
-
 function badge(text, cls) {
 	return E('span', { 'class': 'label ' + (cls || 'label-info'), 'style': 'margin-left:.4em' }, [ text ]);
 }
@@ -70,6 +58,8 @@ function channel(info) {
 return view.extend({
 	_jobActive: false,
 	_info: null,
+	_lastCheck: null,
+	_verSel: null,
 
 	load: function() {
 		return Promise.all([
@@ -96,21 +86,6 @@ return view.extend({
 			E('div', { 'class': 'cbi-section-title' }, [ _('Status') ]),
 			statusBox
 		]));
-
-		var logBox = E('pre', { 'class': 'ucli', 'style': 'max-height:300px; overflow:auto' }, [ _('(empty)') ]);
-		tabStatus.appendChild(E('div', { 'class': 'cbi-section' }, [
-			E('div', { 'class': 'cbi-section-title' }, [ _('Service log') ]),
-			E('button', {
-				'class': 'btn cbi-button',
-				'click': ui.createHandlerFn(this, function() {
-					return disp('logs', [ 'service', '60' ]).then(function(res) {
-						logBox.textContent = res.log || _('(empty)');
-					}).catch(function(e) { ui.addNotification(null, E('p', {}, [ e ])); });
-				})
-			}, [ _('Refresh service log') ]),
-			E('div', { 'style': 'margin-top:.5em' }, [ logBox ])
-		]));
-
 		this.renderStatusBox(statusBox, self._info);
 
 		/* ================= version tab ================= */
@@ -155,16 +130,9 @@ return view.extend({
 	},
 
 	renderStatusBox: function(box, info) {
-		var modeText = {
-			v2: _('v2 running'),
-			legacy: _('v1 compat mode (v2 not installed yet)'),
-			none: _('Not installed')
-		};
-
 		box.innerHTML = '';
 		box.appendChild(kvTable([
-			[ _('Status'), (info.running ? badge(_('Running'), 'label-success') : badge(_('Stopped'), 'label-danger')) ],
-			[ _('Mode'), modeText[info.mode] || info.mode ],
+			[ _('Status'), info.running ? E('span', {}, [ _('Running') ]) : E('span', { 'style': 'color:red' }, [ _('Stopped') ]) ],
 			[ _('Installed version'), info.installed_version || '-' ],
 			[ _('Listen port'), info.port ],
 			[ _('Autostart'), info.service_enabled ? _('Yes') : _('No') ],
@@ -173,21 +141,6 @@ return view.extend({
 		]));
 
 		box.appendChild(E('div', { 'style': 'margin-top:.8em' }, [
-			E('button', {
-				'class': 'btn cbi-button',
-				'click': ui.createHandlerFn(this, function() { return callSetInit('sunpanel', 'start'); })
-			}, [ _('Start') ]),
-			' ',
-			E('button', {
-				'class': 'btn cbi-button',
-				'click': ui.createHandlerFn(this, function() { return callSetInit('sunpanel', 'stop'); })
-			}, [ _('Stop') ]),
-			' ',
-			E('button', {
-				'class': 'btn cbi-button cbi-button-negative',
-				'click': ui.createHandlerFn(this, function() { return callSetInit('sunpanel', 'restart'); })
-			}, [ _('Restart') ]),
-			' ',
 			E('a', {
 				'href': 'http://' + window.location.hostname + ':' + info.port + '/',
 				'target': '_blank',
@@ -196,20 +149,16 @@ return view.extend({
 		]));
 	},
 
-	/* ================= settings tab (uniform layout) ================= */
+	/* ================= settings tab ================= */
 
 	buildSettings: function(info) {
 		var self = this;
 		var m, s, o;
-		var isLegacy = (info.mode == 'legacy');
 
-		m = new form.Map('sunpanel', _('Sun-Panel basic configuration'));
+		m = new form.Map('sunpanel');
 
-		s = m.section(form.NamedSection, 'sunpanel', 'sunpanel', _('Global settings'));
+		s = m.section(form.NamedSection, 'sunpanel', 'sunpanel');
 		s.addremove = false;
-
-		if (isLegacy)
-			o = s.option(form.DummyValue, '_legacyhint', _('v1 compat mode: network settings follow the old configuration and will take effect after v2 is installed.'));
 
 		o = s.option(form.Flag, 'enabled', _('Enable service'));
 		o.default = o.enabled;
@@ -267,8 +216,8 @@ return view.extend({
 	renderVersionTab: function(box, info) {
 		var self = this;
 		box.innerHTML = '';
+		self._info = info;
 
-		/* ---------- release source settings ---------- */
 		var appDirInput = E('input', {
 			'type': 'text', 'class': 'cbi-input-text', 'value': info.app_dir,
 			'style': 'width:100%'
@@ -293,9 +242,8 @@ return view.extend({
 		]);
 
 		box.appendChild(E('div', { 'class': 'cbi-section' }, [
-			E('div', { 'class': 'cbi-section-title' }, [ _('Release source') ]),
 			E('table', { 'class': 'table' }, [
-				E('tr', {}, [ E('td', { 'style': 'width:33%' }, [ _('Program directory') ]), E('td', {}, [ appDirInput ]) ]),
+				E('tr', {}, [ E('td', { 'style': 'width:200px' }, [ _('Program directory') ]), E('td', {}, [ appDirInput ]) ]),
 				E('tr', {}, [ E('td', {}, [ _('Update channel') ]), E('td', {}, [ chSel ]) ]),
 				E('tr', {}, [ E('td', {}, [ _('GitHub mirror prefix') ]), E('td', {}, [ mirrorInput ]) ]),
 				E('tr', {}, [ E('td', {}, [ _('Download proxy') ]), E('td', {}, [ proxyInput ]) ]),
@@ -315,77 +263,72 @@ return view.extend({
 			])
 		]));
 
-		/* ---------- check & install (persistent result) ---------- */
-		var checkResult = E('div', {}, E('em', {}, [ _('Click "Check for updates" to load the version list.') ]));
+		/* ---------- version rows ---------- */
+		var checkBtn = E('button', {
+			'class': 'btn cbi-button cbi-button-action',
+			'click': ui.createHandlerFn(self, function(ev) {
+				ev.target.disabled = true;
+				return self.doCheck(box, ev.target);
+			})
+		}, [ _('Check for updates') ]);
+
+		var latestText = '-';
+		var selWidget = E('span', {}, [ '-' ]);
+		var chk = self._lastCheck;
+		if (chk) {
+			var list = (channel(info) == 'stable') ? (chk.stable_list || []) : (chk.beta_list || []);
+			if (list.length > 0) {
+				latestText = list[0].tag;
+				var opts = [];
+				for (var i = 0; i < list.length; i++) {
+					opts.push(E('option', {
+						'value': '' + i,
+						'selected': i == 0 ? 'selected' : null
+					}, [ '%s  ·  %s  ·  %s'.format(list[i].tag, (list[i].date || '').slice(0, 10), fmtSize(list[i].size)) ]));
+				}
+				selWidget = verSel = self._verSel = E('select', { 'class': 'cbi-input-select', 'style': 'width:auto; min-width:280px' }, opts);
+			}
+		}
+
+		var updateBtn = E('button', {
+			'class': 'btn cbi-button cbi-button-action',
+			'click': ui.createHandlerFn(self, function(ev) {
+				var sel = self._verSel;
+				var idx = sel ? +sel.value : -1;
+				var chk2 = self._lastCheck;
+				var list2 = chk2 ? ((channel(self._info) == 'stable') ? (chk2.stable_list || []) : (chk2.beta_list || [])) : [];
+				var e = list2[idx];
+				if (e)
+					self.confirmInstall(e.tag, e.url, e.sha256);
+			})
+		}, [ _('Update version') ]);
+		if (!self._lastCheck)
+			updateBtn.disabled = 'disabled';
+
 		box.appendChild(E('div', { 'class': 'cbi-section' }, [
-			E('div', { 'class': 'cbi-section-title' }, [ _('Check for updates') ]),
-			E('p', {}, [
-				_('Installed version: %s').format(info.installed_version || _('Not installed')),
-				'　',
-				_('Architecture: %s').format(info.arch)
-			]),
-			E('button', {
-				'class': 'btn cbi-button cbi-button-action',
-				'click': ui.createHandlerFn(self, function(ev) {
-					ev.target.disabled = true;
-					dom.content(checkResult, E('em', { 'class': 'spinning' }, [ _('Checking…') ]));
-					return disp('check-update').then(function(res) {
-						self._lastCheck = res;
-						self.showCheckResult(checkResult, res, channel(info));
-					}).catch(function(e) {
-						dom.content(checkResult, E('div', { 'class': 'alert alert-danger' }, [ _('Check failed: %s').format(e) ]));
-					}).finally(function() {
-						ev.target.disabled = false;
-					});
-				})
-			}, [ _('Check latest GitHub releases') ]),
-			E('div', { 'data-check-result': '1', 'style': 'margin-top:.8em' }, [ checkResult ])
+			kvTable([
+				[ _('Installed version'), (info.installed_version || '-') + '　', checkBtn ],
+				[ _('Latest version'), latestText ],
+				[ _('Select version'), selWidget ],
+				[ '', updateBtn ]
+			])
 		]));
 	},
 
-	showCheckResult: function(box, res, chan) {
+	doCheck: function(box, btn) {
 		var self = this;
-		var list = (chan == 'stable') ? (res.stable_list || []) : (res.beta_list || []);
-		dom.content(box, E('span', {}, []));
-
-		if (list.length == 0) {
-			box.appendChild(E('p', {}, [ _('No release available in this channel') ]));
-			if (chan == 'stable')
-				box.appendChild(E('p', {}, [ _('No stable v2 release exists yet; stable channel currently tracks v1.8.x.') ]));
-			return;
-		}
-
-		var latest = list[0];
-		var opts = [];
-		for (var i = 0; i < list.length; i++) {
-			opts.push(E('option', {
-				'value': '' + i,
-				'selected': i == 0 ? 'selected' : null
-			}, [ '%s  ·  %s  ·  %s'.format(list[i].tag, (list[i].date || '').slice(0, 10), fmtSize(list[i].size)) ]));
-		}
-		var verSel = E('select', { 'class': 'cbi-input-select', 'style': 'width:auto; min-width:280px' }, opts);
-
-		var installBtn = E('button', {
-			'class': 'btn cbi-button cbi-button-action'
-		}, [ _('Install selected version') ]);
-		installBtn.onclick = function(ev) {
-			var e = list[+verSel.value];
-			if (e)
-				self.confirmInstall(e.tag, e.url, e.sha256);
-		};
-
-		var isCurrent = (latest.tag == res.current);
-		box.appendChild(E('div', { 'class': 'cbi-section', 'style': 'border:1px solid var(--border-color); border-radius:4px; padding:.6em' }, [
-			E('p', {}, [
-				E('strong', {}, [ latest.tag ]),
-				' ',
-				latest.prerelease ? badge(_('Pre-release'), 'label-warning') : badge(_('Official release'), 'label-success'),
-				isCurrent ? badge(_('Installed'), 'label-info') : E('span', {}, [ '' ])
-			]),
-			E('p', {}, [ _('Select a version to install') ]),
-			E('div', {}, [ verSel ]),
-			E('div', { 'style': 'margin-top:.6em' }, [ installBtn ])
-		]));
+		btn.disabled = true;
+		return disp('check-update').then(function(res) {
+			self._lastCheck = res;
+		}).then(function() {
+			return disp('info');
+		}).then(function(inf) {
+			self._info = inf;
+			self.renderVersionTab(box, inf);
+		}).catch(function(e) {
+			btn.disabled = false;
+			ui.addNotification(null, E('p', {}, [ _('Check failed: %s').format(e) ]));
+		});
 	},
 
 	saveReleaseSettings: function(box, vals) {
@@ -400,6 +343,7 @@ return view.extend({
 			return disp('info');
 		}).then(function(inf) {
 			self._info = inf;
+			self.renderVersionTab(box, inf);
 			ui.addTimeLimitedNotification(null, E('p', {}, [ _('Release source settings saved') ]), 3000);
 		}).catch(function(e) {
 			ui.addNotification(null, E('p', {}, [ _('Operation failed: %s').format(e) ]));

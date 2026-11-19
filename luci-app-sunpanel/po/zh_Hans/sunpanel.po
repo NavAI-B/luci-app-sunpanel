@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: luci-app-sunpanel 1.0.0\n"
-"POT-Creation-Date: 2026-11-19 07:06\n"
+"POT-Creation-Date: 2026-11-19 07:40\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -11,24 +11,6 @@ msgstr ""
 
 msgid "Dispatcher call failed"
 msgstr "调度器调用失败"
-
-msgid "Downloading"
-msgstr "正在下载"
-
-msgid "Verifying SHA256"
-msgstr "正在校验 SHA256"
-
-msgid "Extracting"
-msgstr "正在解包"
-
-msgid "Switching version"
-msgstr "正在切换版本"
-
-msgid "Done"
-msgstr "完成"
-
-msgid "Failed"
-msgstr "失败"
 
 msgid "Service status"
 msgstr "服务状态"
@@ -45,38 +27,17 @@ msgstr "加载中…"
 msgid "Status"
 msgstr "运行状态"
 
-msgid "(empty)"
-msgstr "（空）"
-
-msgid "Service log"
-msgstr "服务日志"
-
-msgid "Refresh service log"
-msgstr "刷新服务日志"
-
 msgid "Update installed successfully"
 msgstr "更新安装成功"
 
 msgid "Update failed, rolled back automatically"
 msgstr "更新失败，已自动回滚"
 
-msgid "v2 running"
-msgstr "v2 正式运行"
-
-msgid "v1 compat mode (v2 not installed yet)"
-msgstr "v1 兼容模式（尚未安装 v2）"
-
-msgid "Not installed"
-msgstr "未安装"
-
 msgid "Running"
 msgstr "运行中"
 
 msgid "Stopped"
-msgstr "已停止"
-
-msgid "Mode"
-msgstr "运行模式"
+msgstr "未启动"
 
 msgid "Installed version"
 msgstr "已安装版本"
@@ -99,26 +60,8 @@ msgstr "程序目录"
 msgid "Data directory"
 msgstr "数据目录"
 
-msgid "Start"
-msgstr "启动"
-
-msgid "Stop"
-msgstr "停止"
-
-msgid "Restart"
-msgstr "重启"
-
 msgid "Open panel"
 msgstr "打开面板"
-
-msgid "Sun-Panel basic configuration"
-msgstr "Sun-Panel 基础配置"
-
-msgid "Global settings"
-msgstr "全局设置"
-
-msgid "v1 compat mode: network settings follow the old configuration and will take effect after v2 is installed."
-msgstr "v1 兼容模式：网络相关设置沿用旧配置，安装 v2 后将自动生效。"
 
 msgid "Enable service"
 msgstr "启用服务"
@@ -168,9 +111,6 @@ msgstr "稳定版（v1.x 线）"
 msgid "Beta (v2 line)"
 msgstr "测试版（v2 线）"
 
-msgid "Release source"
-msgstr "发布源"
-
 msgid "Update channel"
 msgstr "更新通道"
 
@@ -183,47 +123,20 @@ msgstr "下载代理"
 msgid "Save settings"
 msgstr "保存配置"
 
-msgid "Click \"Check for updates\" to load the version list."
-msgstr "点击「检查 GitHub 最新版本」加载版本列表。"
-
 msgid "Check for updates"
 msgstr "检查更新"
 
-msgid "Installed version: %s"
-msgstr "已安装版本：%s"
+msgid "Update version"
+msgstr "更新版本"
 
-msgid "Architecture: %s"
-msgstr "架构：%s"
+msgid "Latest version"
+msgstr "最新版本"
 
-msgid "Checking…"
-msgstr "检查中…"
+msgid "Select version"
+msgstr "选择版本"
 
 msgid "Check failed: %s"
 msgstr "检查失败：%s"
-
-msgid "Check latest GitHub releases"
-msgstr "检查 GitHub 最新版本"
-
-msgid "No release available in this channel"
-msgstr "该通道暂无可用版本"
-
-msgid "No stable v2 release exists yet; stable channel currently tracks v1.8.x."
-msgstr "当前 v2 正式版尚未发布，稳定通道暂对应 v1.8.x 线。"
-
-msgid "Install selected version"
-msgstr "安装所选版本"
-
-msgid "Pre-release"
-msgstr "预发布"
-
-msgid "Official release"
-msgstr "正式版"
-
-msgid "Installed"
-msgstr "已安装"
-
-msgid "Select a version to install"
-msgstr "选择要安装的版本"
 
 msgid "Release source settings saved"
 msgstr "发布源设置已保存"

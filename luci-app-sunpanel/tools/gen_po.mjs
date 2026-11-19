@@ -50,7 +50,7 @@ const EN_MAP = {
   '未安装': 'Not installed',
   '打开面板': 'Open panel',
   '运行中': 'Running',
-  '已停止': 'Stopped',
+  '未启动': 'Stopped',
   '运行模式': 'Mode',
   '已安装版本': 'Installed version',
   '监听端口': 'Listen port',
@@ -189,7 +189,10 @@ const EN_MAP = {
   '更新安装成功': 'Update installed successfully',
   '更新失败，已自动回滚': 'Update failed, rolled back automatically',
   '更新任务已启动': 'Update job started',
-  '发布源设置已保存': 'Release source settings saved'
+  '发布源设置已保存': 'Release source settings saved',
+  '最新版本': 'Latest version',
+  '选择版本': 'Select version',
+  '更新版本': 'Update version'
 };
 
 const ZH_MAP = Object.fromEntries(Object.entries(EN_MAP).map(([zh, en]) => [en, zh]));

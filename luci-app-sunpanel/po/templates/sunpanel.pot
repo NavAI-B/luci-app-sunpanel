@@ -8,24 +8,6 @@ msgstr ""
 msgid "Dispatcher call failed"
 msgstr ""
 
-msgid "Downloading"
-msgstr ""
-
-msgid "Verifying SHA256"
-msgstr ""
-
-msgid "Extracting"
-msgstr ""
-
-msgid "Switching version"
-msgstr ""
-
-msgid "Done"
-msgstr ""
-
-msgid "Failed"
-msgstr ""
-
 msgid "Service status"
 msgstr ""
 
@@ -41,37 +23,16 @@ msgstr ""
 msgid "Status"
 msgstr ""
 
-msgid "(empty)"
-msgstr ""
-
-msgid "Service log"
-msgstr ""
-
-msgid "Refresh service log"
-msgstr ""
-
 msgid "Update installed successfully"
 msgstr ""
 
 msgid "Update failed, rolled back automatically"
 msgstr ""
 
-msgid "v2 running"
-msgstr ""
-
-msgid "v1 compat mode (v2 not installed yet)"
-msgstr ""
-
-msgid "Not installed"
-msgstr ""
-
 msgid "Running"
 msgstr ""
 
 msgid "Stopped"
-msgstr ""
-
-msgid "Mode"
 msgstr ""
 
 msgid "Installed version"
@@ -95,25 +56,7 @@ msgstr ""
 msgid "Data directory"
 msgstr ""
 
-msgid "Start"
-msgstr ""
-
-msgid "Stop"
-msgstr ""
-
-msgid "Restart"
-msgstr ""
-
 msgid "Open panel"
-msgstr ""
-
-msgid "Sun-Panel basic configuration"
-msgstr ""
-
-msgid "Global settings"
-msgstr ""
-
-msgid "v1 compat mode: network settings follow the old configuration and will take effect after v2 is installed."
 msgstr ""
 
 msgid "Enable service"
@@ -164,9 +107,6 @@ msgstr ""
 msgid "Beta (v2 line)"
 msgstr ""
 
-msgid "Release source"
-msgstr ""
-
 msgid "Update channel"
 msgstr ""
 
@@ -179,46 +119,19 @@ msgstr ""
 msgid "Save settings"
 msgstr ""
 
-msgid "Click \"Check for updates\" to load the version list."
-msgstr ""
-
 msgid "Check for updates"
 msgstr ""
 
-msgid "Installed version: %s"
+msgid "Update version"
 msgstr ""
 
-msgid "Architecture: %s"
+msgid "Latest version"
 msgstr ""
 
-msgid "Checking…"
+msgid "Select version"
 msgstr ""
 
 msgid "Check failed: %s"
-msgstr ""
-
-msgid "Check latest GitHub releases"
-msgstr ""
-
-msgid "No release available in this channel"
-msgstr ""
-
-msgid "No stable v2 release exists yet; stable channel currently tracks v1.8.x."
-msgstr ""
-
-msgid "Install selected version"
-msgstr ""
-
-msgid "Pre-release"
-msgstr ""
-
-msgid "Official release"
-msgstr ""
-
-msgid "Installed"
-msgstr ""
-
-msgid "Select a version to install"
 msgstr ""
 
 msgid "Release source settings saved"
