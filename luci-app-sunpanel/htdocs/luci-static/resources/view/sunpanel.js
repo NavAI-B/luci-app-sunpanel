@@ -135,6 +135,11 @@ return view.extend({
 
 	renderStatusBox: function(box, info) {
 		box.innerHTML = '';
+		var openLink = E('a', {
+			'href': 'http://' + window.location.hostname + ':' + info.port + '/',
+			'target': '_blank',
+			'class': 'btn cbi-button cbi-button-action'
+		}, [ _('Open panel') ]);
 		box.appendChild(kvTable([
 			[ _('Status'), info.running ? E('span', {}, [ _('Running') ]) : E('span', { 'style': 'color:red' }, [ _('Stopped') ]) ],
 			[ _('Installed version'), info.installed_version || '-' ],
@@ -144,13 +149,6 @@ return view.extend({
 			[ _('Data directory'), info.data_dir ],
 			[ '', openLink ]
 		]));
-
-		var openLink = E('a', {
-			'href': 'http://' + window.location.hostname + ':' + info.port + '/',
-			'target': '_blank',
-			'class': 'btn cbi-button cbi-button-action'
-		}, [ _('Open panel') ]);
-		box.appendChild(E('div', { 'style': 'margin-top:2em' }));
 	},
 
 	/* ================= settings tab ================= */
@@ -206,7 +204,6 @@ return view.extend({
 		uci.set('sunpanel', 'sunpanel', 'listen', v.listen);
 		uci.set('sunpanel', 'sunpanel', 'token_expires', v.token_expires);
 		uci.set('sunpanel', 'sunpanel', 'data_dir', v.data_dir);
-		uci.set('sunpanel', 'sunpanel', 'manage_conf', v.manage_conf);
 		return uci.save().then(function() {
 			return uci.apply(15);
 		}).then(function() {
