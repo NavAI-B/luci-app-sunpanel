@@ -66,10 +66,6 @@ return view.extend({
 	_info: null,
 	_lastCheck: null,
 	_verSel: null,
-	_verMsg: '',
-	_verMsgCls: '',
-	_verStatus: null,
-	_updateBtn: null,
 	_setSpan: null,
 
 	load: function() {
@@ -123,14 +119,11 @@ return view.extend({
 					return disp('info').then(function(inf) {
 						self._info = inf;
 						self.renderVersionTab(versionBox, inf);
-						self._verMsg = _('Update installed successfully');
-						self._verMsgCls = 'color:#2e7d32';
 					});
 				}
 				if (st.phase == 'failed') {
 					self._jobActive = false;
-					self._verMsg = _('Update failed, rolled back automatically') + (st.message ? ': ' + st.message : '');
-					self._verMsgCls = 'color:red';
+					ui.addNotification(null, E('p', {}, [ _('Update failed, rolled back automatically') + (st.message ? ': ' + st.message : '') ]));
 					self.renderVersionTab(versionBox, self._info);
 				}
 			}).catch(function() {});
@@ -312,9 +305,6 @@ return view.extend({
 		}, [ self._jobActive ? _('Updating…') : _('Update version') ]);
 		if (self._jobActive || !self._lastCheck)
 			updateBtn.disabled = 'disabled';
-		var verStatus = E('span', { 'style': self._verMsgCls || '' }, [ self._verMsg || '' ]);
-		self._verStatus = verStatus;
-		self._updateBtn = updateBtn;
 
 		box.appendChild(kvTable([
 			[ _('Program directory'), appDirInput ],
@@ -335,17 +325,12 @@ return view.extend({
 			[ _('Installed version'), info.installed_version || '-' ],
 			[ _('Latest version'), latestText ],
 			[ _('Select version'), selWidget ],
-			[ '', verStatus ],
-			[ '', updateBtn, ' ', checkBtn ]
+			[ '', E('div', { 'style': 'display:flex; gap:.5em; align-items:center' }, [ updateBtn, checkBtn ]) ]
 		]));
 	},
 
 	doCheck: function(box, btn) {
 		var self = this;
-		self._verMsg = _('Checking…');
-		self._verMsgCls = '';
-		if (self._verStatus)
-			self._verStatus.textContent = self._verMsg;
 		btn.disabled = true;
 		return disp('check-update').then(function(res) {
 			self._lastCheck = res;
@@ -356,10 +341,7 @@ return view.extend({
 			self.renderVersionTab(box, inf);
 		}).catch(function(e) {
 			btn.disabled = false;
-			self._verMsg = _('Check failed: %s').format(e);
-			self._verMsgCls = 'color:red';
-			if (self._verStatus)
-				self._verStatus.textContent = self._verMsg;
+			ui.addNotification(null, E('p', {}, [ _('Check failed: %s').format(e) ]));
 		});
 	},
 
@@ -377,10 +359,7 @@ return view.extend({
 			self._info = inf;
 			self.renderVersionTab(box, inf);
 		}).catch(function(e) {
-			self._verMsg = _('Operation failed: %s').format(e);
-			self._verMsgCls = 'color:red';
-			if (self._verStatus)
-				self._verStatus.textContent = self._verMsg;
+			ui.addNotification(null, E('p', {}, [ _('Operation failed: %s').format(e) ]));
 		});
 	},
 
@@ -407,20 +386,9 @@ return view.extend({
 		var self = this;
 		self._jobActive = true;
 		return disp('update-start', [ tag, url, sha || '-' ]).then(function() {
-			self._verMsg = _('Updating…');
-			self._verMsgCls = '';
-			if (self._verStatus)
-				self._verStatus.textContent = self._verMsg;
-			if (self._updateBtn) {
-				self._updateBtn.disabled = true;
-				self._updateBtn.textContent = self._verMsg;
-			}
 		}).catch(function(e) {
 			self._jobActive = false;
-			self._verMsg = _('Failed to start update: %s').format(e);
-			self._verMsgCls = 'color:red';
-			if (self._verStatus)
-				self._verStatus.textContent = self._verMsg;
+			ui.addNotification(null, E('p', {}, [ _('Failed to start update: %s').format(e) ]));
 		});
 	}
 });
