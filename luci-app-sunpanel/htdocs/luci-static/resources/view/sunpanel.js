@@ -66,6 +66,11 @@ return view.extend({
 	_info: null,
 	_lastCheck: null,
 	_verSel: null,
+	_verMsg: '',
+	_verMsgCls: '',
+	_verStatus: null,
+	_updateBtn: null,
+	_setSpan: null,
 
 	load: function() {
 		return Promise.all([
@@ -118,12 +123,15 @@ return view.extend({
 					return disp('info').then(function(inf) {
 						self._info = inf;
 						self.renderVersionTab(versionBox, inf);
-						ui.addNotification(null, E('p', {}, [ _('Update installed successfully') ]));
+						self._verMsg = _('Update installed successfully');
+						self._verMsgCls = 'color:#2e7d32';
 					});
 				}
 				if (st.phase == 'failed') {
 					self._jobActive = false;
-					ui.addNotification(null, E('p', {}, [ _('Update failed, rolled back automatically') + (st.message ? ': ' + st.message : '') ]));
+					self._verMsg = _('Update failed, rolled back automatically') + (st.message ? ': ' + st.message : '');
+					self._verMsgCls = 'color:red';
+					self.renderVersionTab(versionBox, self._info);
 				}
 			}).catch(function() {});
 		}, this), 3);
@@ -171,6 +179,8 @@ return view.extend({
 		var listenInput = textInput(uciGet('listen', '0.0.0.0'));
 		var tokenInput = textInput(uciGet('token_expires', '168'));
 		var dataDirInput = textInput(uciGet('data_dir', '/mnt/mmcblk0p1/sun-panel/data'));
+		var setSpan = E('span', { 'style': 'margin-left:.5em' }, [ '' ]);
+		self._setSpan = setSpan;
 
 		box.appendChild(kvTable([
 			[ _('Enable service'), enabledCb ],
@@ -179,25 +189,32 @@ return view.extend({
 			[ _('Listen address'), listenInput ],
 			[ _('Token lifetime (hours)'), tokenInput ],
 			[ _('Data directory'), dataDirInput ],
-			[ '', E('button', {
-				'class': 'btn cbi-button cbi-button-action',
-				'click': ui.createHandlerFn(self, function() {
-					return self.saveSettings(box, {
-						enabled: enabledCb.checked ? '1' : '0',
-						port: portInput.value,
-						https_port: httpsInput.value,
-						listen: listenInput.value,
-						token_expires: tokenInput.value,
-						data_dir: dataDirInput.value
-					});
-				})
-			}, [ _('Save settings') ]) ]
+			[ '', E('div', { 'style': 'display:flex; align-items:center; gap:.5em' }, [
+				E('button', {
+					'class': 'btn cbi-button cbi-button-action',
+					'click': ui.createHandlerFn(self, function() {
+						return self.saveSettings(box, {
+							enabled: enabledCb.checked ? '1' : '0',
+							port: portInput.value,
+							https_port: httpsInput.value,
+							listen: listenInput.value,
+							token_expires: tokenInput.value,
+							data_dir: dataDirInput.value
+						});
+					})
+				}, [ _('Save settings') ]),
+				setSpan
+			]) ]
 		]));
 		box.appendChild(E('div', { 'style': 'margin-top:2em' }));
 	},
 
 	saveSettings: function(box, v) {
 		var self = this;
+		if (self._setSpan) {
+			self._setSpan.textContent = _('Saving…');
+			self._setSpan.style.color = '';
+		}
 		uci.set('sunpanel', 'sunpanel', 'enabled', v.enabled);
 		uci.set('sunpanel', 'sunpanel', 'port', v.port);
 		uci.set('sunpanel', 'sunpanel', 'https_port', v.https_port);
@@ -210,9 +227,15 @@ return view.extend({
 			return disp('info');
 		}).then(function(inf) {
 			self._info = inf;
-			ui.addNotification(null, E('p', {}, [ _('Settings saved') ]));
+			if (self._setSpan) {
+				self._setSpan.textContent = _('Settings saved');
+				self._setSpan.style.color = '#2e7d32';
+			}
 		}).catch(function(e) {
-			ui.addNotification(null, E('p', {}, [ _('Operation failed: %s').format(e) ]));
+			if (self._setSpan) {
+				self._setSpan.textContent = _('Operation failed: %s').format(e);
+				self._setSpan.style.color = 'red';
+			}
 		});
 	},
 
@@ -289,6 +312,9 @@ return view.extend({
 		}, [ self._jobActive ? _('Updating…') : _('Update version') ]);
 		if (self._jobActive || !self._lastCheck)
 			updateBtn.disabled = 'disabled';
+		var verStatus = E('span', { 'style': self._verMsgCls || '' }, [ self._verMsg || '' ]);
+		self._verStatus = verStatus;
+		self._updateBtn = updateBtn;
 
 		box.appendChild(kvTable([
 			[ _('Program directory'), appDirInput ],
@@ -309,12 +335,17 @@ return view.extend({
 			[ _('Installed version'), info.installed_version || '-' ],
 			[ _('Latest version'), latestText ],
 			[ _('Select version'), selWidget ],
+			[ '', verStatus ],
 			[ '', updateBtn, ' ', checkBtn ]
 		]));
 	},
 
 	doCheck: function(box, btn) {
 		var self = this;
+		self._verMsg = _('Checking…');
+		self._verMsgCls = '';
+		if (self._verStatus)
+			self._verStatus.textContent = self._verMsg;
 		btn.disabled = true;
 		return disp('check-update').then(function(res) {
 			self._lastCheck = res;
@@ -325,7 +356,10 @@ return view.extend({
 			self.renderVersionTab(box, inf);
 		}).catch(function(e) {
 			btn.disabled = false;
-			ui.addNotification(null, E('p', {}, [ _('Check failed: %s').format(e) ]));
+			self._verMsg = _('Check failed: %s').format(e);
+			self._verMsgCls = 'color:red';
+			if (self._verStatus)
+				self._verStatus.textContent = self._verMsg;
 		});
 	},
 
@@ -342,9 +376,11 @@ return view.extend({
 		}).then(function(inf) {
 			self._info = inf;
 			self.renderVersionTab(box, inf);
-			ui.addNotification(null, E('p', {}, [ _('Release source settings saved') ]));
 		}).catch(function(e) {
-			ui.addNotification(null, E('p', {}, [ _('Operation failed: %s').format(e) ]));
+			self._verMsg = _('Operation failed: %s').format(e);
+			self._verMsgCls = 'color:red';
+			if (self._verStatus)
+				self._verStatus.textContent = self._verMsg;
 		});
 	},
 
@@ -371,10 +407,20 @@ return view.extend({
 		var self = this;
 		self._jobActive = true;
 		return disp('update-start', [ tag, url, sha || '-' ]).then(function() {
-			ui.addNotification(null, E('p', {}, [ _('Update job started') ]));
+			self._verMsg = _('Updating…');
+			self._verMsgCls = '';
+			if (self._verStatus)
+				self._verStatus.textContent = self._verMsg;
+			if (self._updateBtn) {
+				self._updateBtn.disabled = true;
+				self._updateBtn.textContent = self._verMsg;
+			}
 		}).catch(function(e) {
 			self._jobActive = false;
-			ui.addNotification(null, E('p', {}, [ _('Failed to start update: %s').format(e) ]));
+			self._verMsg = _('Failed to start update: %s').format(e);
+			self._verMsgCls = 'color:red';
+			if (self._verStatus)
+				self._verStatus.textContent = self._verMsg;
 		});
 	}
 });

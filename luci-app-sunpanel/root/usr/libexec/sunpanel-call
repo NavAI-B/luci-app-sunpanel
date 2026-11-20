@@ -181,7 +181,7 @@ function act_check_update() {
 	let cmd = sprintf('curl -fsS -m 25 -A %s %s %s',
 		sq('luci-app-sunpanel/' + PLUGIN_VERSION),
 		(proxy != '') ? '-x ' + sq(proxy) : '',
-		sq(GITHUB_API));
+		sq(GITHUB_API + '?per_page=100'));
 	let out = sh_out(cmd);
 	if (out == null || trim(out) == '')
 		err('GitHub API unreachable (network, mirror or proxy issue)');
@@ -198,14 +198,16 @@ function act_check_update() {
 	let arch = goarch();
 	let stable = null, beta = null;
 	let stable_list = [], beta_list = [];
+	let suffix = '_linux_' + arch + '.tar.gz';
 	for (let i = 0; i < length(rels); i++) {
 		let r = rels[i];
 		let tag = r.tag_name;
-		// release asset filenames lowercase the tag (V2.0.2-beta... -> v2.0.2-beta...)
-		let want = sprintf('sun-panel_%s_linux_%s.tar.gz', lc(tag), arch);
 		let asset = null;
 		for (let j = 0; j < length(r.assets); j++) {
-			if (lc(r.assets[j].name) == want) {
+			// match by pattern, not exact tag: upstream renamed tags
+			// (release v2.0.2-beta.5 ships assets named ...beta261118...)
+			let n = lc(r.assets[j].name);
+			if (substr(n, 0, 10) == 'sun-panel_' && substr(n, length(n) - length(suffix)) == suffix) {
 				asset = r.assets[j];
 				break;
 			}
@@ -227,13 +229,13 @@ function act_check_update() {
 		if (isV2) {
 			if (beta == null)
 				beta = e;
-			if (length(beta_list) < 15)
+			if (length(beta_list) < 30)
 				push(beta_list, e);
 		}
 		else if (!e.prerelease) {
 			if (stable == null)
 				stable = e;
-			if (length(stable_list) < 15)
+			if (length(stable_list) < 30)
 				push(stable_list, e);
 		}
 	}

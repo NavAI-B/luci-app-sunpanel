@@ -26,6 +26,9 @@ msgstr ""
 msgid "Update failed, rolled back automatically"
 msgstr ""
 
+msgid "Open panel"
+msgstr ""
+
 msgid "Status"
 msgstr ""
 
@@ -56,9 +59,6 @@ msgstr ""
 msgid "Data directory"
 msgstr ""
 
-msgid "Open panel"
-msgstr ""
-
 msgid "Enable service"
 msgstr ""
 
@@ -75,6 +75,9 @@ msgid "Token lifetime (hours)"
 msgstr ""
 
 msgid "Save settings"
+msgstr ""
+
+msgid "Saving…"
 msgstr ""
 
 msgid "Settings saved"
@@ -119,10 +122,10 @@ msgstr ""
 msgid "Select version"
 msgstr ""
 
-msgid "Check failed: %s"
+msgid "Checking…"
 msgstr ""
 
-msgid "Release source settings saved"
+msgid "Check failed: %s"
 msgstr ""
 
 msgid "Install Sun-Panel %s"
@@ -138,9 +141,6 @@ msgid "Cancel"
 msgstr ""
 
 msgid "Install"
-msgstr ""
-
-msgid "Update job started"
 msgstr ""
 
 msgid "Failed to start update: %s"
