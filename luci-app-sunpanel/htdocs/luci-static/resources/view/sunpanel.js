@@ -172,6 +172,7 @@ return view.extend({
 		var listenInput = textInput(uciGet('listen', '0.0.0.0'));
 		var tokenInput = textInput(uciGet('token_expires', '168'));
 		var dataDirInput = textInput(uciGet('data_dir', '/mnt/mmcblk0p1/sun-panel/data'));
+		var dockerHostInput = textInput(uciGet('docker_host', ''), _('Empty for local /var/run/docker.sock, e.g. tcp://192.168.2.9:2375'));
 		var setSpan = E('span', { 'style': 'margin-left:.5em' }, [ '' ]);
 		self._setSpan = setSpan;
 
@@ -182,6 +183,7 @@ return view.extend({
 			[ _('Listen address'), listenInput ],
 			[ _('Token lifetime (hours)'), tokenInput ],
 			[ _('Data directory'), dataDirInput ],
+			[ _('Docker host'), dockerHostInput ],
 			[ '', E('div', { 'style': 'display:flex; align-items:center; gap:.5em' }, [
 				E('button', {
 					'class': 'btn cbi-button cbi-button-action',
@@ -192,7 +194,8 @@ return view.extend({
 							https_port: httpsInput.value,
 							listen: listenInput.value,
 							token_expires: tokenInput.value,
-							data_dir: dataDirInput.value
+							data_dir: dataDirInput.value,
+							docker_host: dockerHostInput.value
 						});
 					})
 				}, [ _('Save settings') ]),
@@ -214,6 +217,7 @@ return view.extend({
 		uci.set('sunpanel', 'sunpanel', 'listen', v.listen);
 		uci.set('sunpanel', 'sunpanel', 'token_expires', v.token_expires);
 		uci.set('sunpanel', 'sunpanel', 'data_dir', v.data_dir);
+		uci.set('sunpanel', 'sunpanel', 'docker_host', v.docker_host);
 		return uci.save().then(function() {
 			return uci.apply(15);
 		}).then(function() {
@@ -283,7 +287,7 @@ return view.extend({
 					opts.push(E('option', {
 						'value': '' + i,
 						'selected': i == 0 ? 'selected' : null
-					}, [ '%s  ·  %s  ·  %s'.format(list[i].tag, (list[i].date || '').slice(0, 10), fmtSize(list[i].size)) ]));
+					}, [ '%s  ·  %s  ·  %s'.format(list[i].name || list[i].tag, (list[i].date || '').slice(0, 10), fmtSize(list[i].size)) ]));
 				}
 				selWidget = self._verSel = E('select', { 'class': 'cbi-input-select', 'style': 'width:auto; min-width:280px' }, opts);
 			}

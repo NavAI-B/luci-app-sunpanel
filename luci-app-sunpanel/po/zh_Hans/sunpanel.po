@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: luci-app-sunpanel 1.0.0\n"
-"POT-Creation-Date: 2026-11-20 09:28\n"
+"POT-Creation-Date: 2026-11-20 10:11\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -23,9 +23,6 @@ msgstr "版本管理"
 
 msgid "Loading…"
 msgstr "加载中…"
-
-msgid "Update installed successfully"
-msgstr "更新安装成功"
 
 msgid "Update failed, rolled back automatically"
 msgstr "更新失败，已自动回滚"
@@ -63,6 +60,9 @@ msgstr "程序目录"
 msgid "Data directory"
 msgstr "数据目录"
 
+msgid "Empty for local /var/run/docker.sock, e.g. tcp://192.168.2.9:2375"
+msgstr "留空使用本机 /var/run/docker.sock，例如 tcp://192.168.2.9:2375"
+
 msgid "Enable service"
 msgstr "启用服务"
 
@@ -77,6 +77,9 @@ msgstr "监听地址"
 
 msgid "Token lifetime (hours)"
 msgstr "Token 有效期（小时）"
+
+msgid "Docker host"
+msgstr "Docker 主机"
 
 msgid "Save settings"
 msgstr "保存配置"
@@ -125,9 +128,6 @@ msgstr "最新版本"
 
 msgid "Select version"
 msgstr "选择版本"
-
-msgid "Checking…"
-msgstr "检查中…"
 
 msgid "Check failed: %s"
 msgstr "检查失败：%s"

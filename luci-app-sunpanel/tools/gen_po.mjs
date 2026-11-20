@@ -195,6 +195,8 @@ const EN_MAP = {
   '更新版本': 'Update version',
   '更新进行中…': 'Updating…',
   '保存中…': 'Saving…',
+  'Docker 主机': 'Docker host',
+  '留空使用本机 /var/run/docker.sock，例如 tcp://192.168.2.9:2375': 'Empty for local /var/run/docker.sock, e.g. tcp://192.168.2.9:2375',
   '服务的启停由「启用服务」开关控制：保存配置即可生效。': 'Service start/stop is controlled by the enable checkbox: save to apply.',
   '设置已保存': 'Settings saved'
 };

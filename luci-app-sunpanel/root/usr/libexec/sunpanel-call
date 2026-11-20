@@ -216,6 +216,7 @@ function act_check_update() {
 			continue;
 		let e = {
 			tag: tag,
+			name: (r.name != null && r.name != '') ? r.name : tag,
 			prerelease: (r.prerelease == true),
 			date: r.published_at,
 			url: asset.browser_download_url,

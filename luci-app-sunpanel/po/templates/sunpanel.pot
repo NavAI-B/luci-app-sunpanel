@@ -20,9 +20,6 @@ msgstr ""
 msgid "Loading…"
 msgstr ""
 
-msgid "Update installed successfully"
-msgstr ""
-
 msgid "Update failed, rolled back automatically"
 msgstr ""
 
@@ -59,6 +56,9 @@ msgstr ""
 msgid "Data directory"
 msgstr ""
 
+msgid "Empty for local /var/run/docker.sock, e.g. tcp://192.168.2.9:2375"
+msgstr ""
+
 msgid "Enable service"
 msgstr ""
 
@@ -72,6 +72,9 @@ msgid "Listen address"
 msgstr ""
 
 msgid "Token lifetime (hours)"
+msgstr ""
+
+msgid "Docker host"
 msgstr ""
 
 msgid "Save settings"
@@ -120,9 +123,6 @@ msgid "Latest version"
 msgstr ""
 
 msgid "Select version"
-msgstr ""
-
-msgid "Checking…"
 msgstr ""
 
 msgid "Check failed: %s"

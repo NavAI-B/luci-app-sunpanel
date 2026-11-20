@@ -37,6 +37,13 @@ config sunpanel 'sunpanel'
 	# Optional HTTP(S) proxy for downloads, e.g. 'http://127.0.0.1:7890'
 	option proxy ''
 
+	# Docker daemon endpoint for the built-in docker manager.
+	# Empty = local socket (/var/run/docker.sock). To manage containers
+	# running on another host (e.g. NAS), point it at its API:
+	#   tcp://192.168.2.9:2375      (daemon must listen on TCP)
+	# The NAS must expose the docker API for this to work.
+	option docker_host ''
+
 	# Absolute path of a legacy Sun-Panel v1 configuration directory,
 	# filled automatically by install-migrate.sh when an old install is
 	# detected. Used by the v1 compat shim until migration completes.
