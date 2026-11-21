@@ -175,6 +175,60 @@ return view.extend({
 			var setSpan = E('span', { 'style': 'margin-left:.5em' }, [ '' ]);
 			self._setSpan = setSpan;
 
+			// dirty tracking: baseline = values as loaded from the config
+			var base = {
+				ENABLED: conf.ENABLED == '1' ? '1' : '0',
+				PORT: conf.PORT || '',
+				HTTPS_PORT: conf.HTTPS_PORT || '',
+				LISTEN_ADDRESS: conf.LISTEN_ADDRESS || '',
+				TOKEN_EXPIRES: conf.TOKEN_EXPIRES || '',
+				DATA_DIR: conf.DATA_DIR || '',
+				DOCKER_HOST: conf.DOCKER_HOST || ''
+			};
+			function curVals() {
+				return {
+					ENABLED: enabledCb.checked ? '1' : '0',
+					PORT: portInput.value,
+					HTTPS_PORT: httpsInput.value,
+					LISTEN_ADDRESS: listenInput.value,
+					TOKEN_EXPIRES: tokenInput.value,
+					DATA_DIR: dataDirInput.value,
+					DOCKER_HOST: dockerHostInput.value
+				};
+			}
+			var saveBtn = E('button', {
+				'class': 'btn cbi-button cbi-button-action',
+				'click': ui.createHandlerFn(self, function() {
+					var vals = curVals();
+					return self.saveSettings(vals).then(function() {
+						setSpan.textContent = _('Settings saved');
+						setSpan.style.color = '#2e7d32';
+						base = vals;
+						syncSave();
+					}).catch(function(e) {
+						setSpan.textContent = _('Operation failed: %s').format(e);
+						setSpan.style.color = 'red';
+					});
+				})
+			}, [ _('Save settings') ]);
+			function syncSave() {
+				var dirty = false, c = curVals(), k;
+				for (k in base) {
+					if (String(base[k]) != String(c[k])) {
+						dirty = true;
+						break;
+					}
+				}
+				saveBtn.disabled = dirty ? null : 'disabled';
+				if (dirty && setSpan.textContent != '')
+					setSpan.textContent = '';
+			}
+			enabledCb.addEventListener('change', syncSave);
+			var sinputs = [ portInput, httpsInput, listenInput, tokenInput, dataDirInput, dockerHostInput ];
+			for (var si = 0; si < sinputs.length; si++)
+				sinputs[si].addEventListener('input', syncSave);
+			syncSave();
+
 			box.appendChild(kvTable([
 				[ _('Enable service'), enabledCb ],
 				[ _('HTTP port'), portInput ],
@@ -184,20 +238,7 @@ return view.extend({
 				[ _('Data directory'), dataDirInput ],
 				[ _('Docker host'), dockerHostInput ],
 				[ '', E('div', { 'style': 'display:flex; align-items:center; gap:.5em' }, [
-					E('button', {
-						'class': 'btn cbi-button cbi-button-action',
-						'click': ui.createHandlerFn(self, function() {
-							return self.saveSettings({
-								ENABLED: enabledCb.checked ? '1' : '0',
-								PORT: portInput.value,
-								HTTPS_PORT: httpsInput.value,
-								LISTEN_ADDRESS: listenInput.value,
-								TOKEN_EXPIRES: tokenInput.value,
-								DATA_DIR: dataDirInput.value,
-								DOCKER_HOST: dockerHostInput.value
-							}, setSpan);
-						})
-					}, [ _('Save settings') ]),
+					saveBtn,
 					setSpan
 				]) ]
 			]));
@@ -207,18 +248,8 @@ return view.extend({
 		});
 	},
 
-	saveSettings: function(v, setSpan) {
-		return disp('conf-save', [ JSON.stringify(v) ]).then(function() {
-			if (setSpan) {
-				setSpan.textContent = _('Settings saved');
-				setSpan.style.color = '#2e7d32';
-			}
-		}).catch(function(e) {
-			if (setSpan) {
-				setSpan.textContent = _('Operation failed: %s').format(e);
-				setSpan.style.color = 'red';
-			}
-		});
+	saveSettings: function(v) {
+		return disp('conf-save', [ JSON.stringify(v) ]);
 	},
 
 	/* ================= version tab ================= */
@@ -237,17 +268,54 @@ return view.extend({
 		]);
 
 		var relSpan = E('span', { 'style': 'margin-left:.5em' }, [ '' ]);
+
+		// dirty tracking: baseline = values as loaded from the config
+		var base = {
+			APP_DIR: info.app_dir || '',
+			CHANNEL: channel(info),
+			MIRROR: info.mirror || '',
+			PROXY: info.proxy || ''
+		};
+		function curVals() {
+			return {
+				APP_DIR: appDirInput.value,
+				CHANNEL: chSel.value,
+				MIRROR: mirrorInput.value,
+				PROXY: proxyInput.value
+			};
+		}
 		var saveBtn = E('button', {
 			'class': 'btn cbi-button cbi-button-action',
 			'click': ui.createHandlerFn(self, function() {
-				return self.saveReleaseSettings({
-					APP_DIR: appDirInput.value,
-					CHANNEL: chSel.value,
-					MIRROR: mirrorInput.value,
-					PROXY: proxyInput.value
-				}, relSpan);
+				var vals = curVals();
+				return self.saveReleaseSettings(vals).then(function() {
+					relSpan.textContent = _('Settings saved');
+					relSpan.style.color = '#2e7d32';
+					base = vals;
+					syncSave();
+				}).catch(function(e) {
+					relSpan.textContent = _('Operation failed: %s').format(e);
+					relSpan.style.color = 'red';
+				});
 			})
 		}, [ _('Save settings') ]);
+		function syncSave() {
+			var dirty = false, c = curVals(), k;
+			for (k in base) {
+				if (String(base[k]) != String(c[k])) {
+					dirty = true;
+					break;
+				}
+			}
+			saveBtn.disabled = dirty ? null : 'disabled';
+			if (dirty && relSpan.textContent != '')
+				relSpan.textContent = '';
+		}
+		appDirInput.addEventListener('input', syncSave);
+		mirrorInput.addEventListener('input', syncSave);
+		proxyInput.addEventListener('input', syncSave);
+		chSel.addEventListener('change', syncSave);
+		syncSave();
 
 		var updateBtn = E('button', {
 			'class': 'btn cbi-button cbi-button-action',
@@ -333,21 +401,12 @@ return view.extend({
 		});
 	},
 
-	saveReleaseSettings: function(v, span) {
+	saveReleaseSettings: function(v) {
 		var self = this;
 		return disp('conf-save', [ JSON.stringify(v) ]).then(function() {
-			if (span) {
-				span.textContent = _('Settings saved');
-				span.style.color = '#2e7d32';
-			}
 			return disp('info');
 		}).then(function(inf) {
 			self._info = inf;
-		}).catch(function(e) {
-			if (span) {
-				span.textContent = _('Operation failed: %s').format(e);
-				span.style.color = 'red';
-			}
 		});
 	},
 

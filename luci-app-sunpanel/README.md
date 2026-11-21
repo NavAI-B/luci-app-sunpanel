@@ -2,7 +2,7 @@
 
 将 [Sun-Panel](https://github.com/hslr-s/sun-panel) v2 以**原生二进制**方式部署在
 OpenWrt/ImmortalWrt 上，并提供 LuCI 管理界面：服务启停、版本更新（对齐 GitHub Releases）、
-基础配置，以及**远程 Docker 主机**接入——路由器上无需安装 Docker，也能管理 NAS 上的容器。
+与基础配置。
 
 - 上游项目: <https://github.com/hslr-s/sun-panel>
 - 官方文档: <https://doc.sun-panel.top>
@@ -24,7 +24,7 @@ procd 下：单进程、开机自启、崩溃自动拉起，资源占用与维�
 | 标签页 | 内容 |
 |---|---|
 | 服务状态 | 运行状态（文字色区分）、已安装版本、监听端口、开机自启、目录信息、打开面板入口 |
-| 基础设置 | 启用服务（启停总开关）、端口/监听地址/token 有效期、数据目录、conf.ini 托管开关、Docker 主机 |
+| 基础设置 | 启用服务（启停总开关）、端口/监听地址/token 有效期、数据目录 |
 | 版本管理 | 发布源配置（程序目录/更新通道 V1·V2/GitHub 加速前缀/下载代理）、版本下拉可选装任意已发布版本、按架构自动选包、下载→SHA256 校验→原子切换→健康检查→**失败自动回滚** |
 
 ### 设计要点
@@ -33,10 +33,8 @@ procd 下：单进程、开机自启、崩溃自动拉起，资源占用与维�
   （默认 `/mnt/mmcblk0p1/sun-panel/app`），系统分区不再被大文件与版本迭代挤爆。
 - **Release 对齐**：版本列表直接与 GitHub Releases 同步，按大版本线分组（V1 / V2），
   资产匹配按文件名模式而非 tag 精确对照——上游连 tag 与资产文件的命名都对不上也能正确识别。
-- **conf.ini 托管**：UCI 为唯一配置源，启动时按 v2 实测格式渲染（含 v2 新增 `micro_app_path`）；
-  `manage_conf=0` 时只生成一次，保留手工修改。
-- **远程 Docker 管理**：v2 的 Docker 管理器走标准 Docker Go 客户端，尊重 `DOCKER_HOST`——
-  在基础设置里填 `tcp://NAS_IP:2375` 即可管理 NAS 上的容器，路由器无需安装 Docker（见下文）。
+- **配置存储**：所有配置集中在 `/etc/sunpanel.conf`（KEY='value'，init 与更新脚本共享），
+  首次启动按 v2 实测格式渲染 `conf/conf.ini`（含 v2 新增 `micro_app_path`），之后保留手工修改。
 - **网络不友好环境**：支持 GitHub 加速前缀（镜像）与 HTTP 代理两种下载加速方式。
 
 ## 安装
@@ -63,7 +61,7 @@ apk add ./luci-i18n-sunpanel-zh-cn_1.0.6.apk
 ```
 
 卸载：LuCI 软件包列表中移除，或 `apk del luci-i18n-sunpanel-zh-cn luci-app-sunpanel`。
-配置 `/etc/config/sunpanel` 与数据、程序目录默认保留。
+配置 `/etc/sunpanel.conf` 与数据、程序目录默认保留。
 
 ## 快速开始（全新安装）
 
@@ -73,43 +71,7 @@ apk add ./luci-i18n-sunpanel-zh-cn_1.0.6.apk
 3. 网络不好时先在基础设置里配「GitHub 加速前缀」（如 `https://ghfast.top`）或「下载代理」，
    或用「离线安装」上传本地下载好的 release 包
 4. 打开面板，用 v2 首次启动的账号登录（默认 `admin@sun.cc` / `12345678`），**立即修改密码**
-5. 基础设置里按需调整端口/数据目录；有 NAS Docker 的填「Docker 主机」启用容器管理
-
-## 远程 Docker 管理（管理 NAS 上的容器）
-
-v2 内置的 Docker 管理器通过标准 Docker 客户端工作，尊重 `DOCKER_HOST` 环境变量。
-在基础设置里把「Docker 主机」填成 NAS 的 Docker API 地址（如 `tcp://192.168.2.9:2375`），
-保存并重启后，v2 界面的 Docker 卡片即可列出并控制 NAS 上的容器。
-
-NAS 侧需要把 Docker API 暴露为 TCP。推荐在 NAS 的 Docker 管理界面里部署
-**docker-socket-proxy** 容器——白名单放行，不暴露高危接口：
-
-```yaml
-services:
-  docker-socket-proxy:
-    image: tecnativa/docker-socket-proxy
-    container_name: docker-socket-proxy
-    restart: unless-stopped
-    ports:
-      - "2375:2375"
-    environment:
-      - CONTAINERS=1        # 查看/列出容器
-      - IMAGES=1            # 查看镜像
-      - INFO=1
-      - PING=1
-      - VERSION=1
-      - ALLOW_START=1       # 启动容器
-      - ALLOW_STOP=1        # 停止容器
-      - ALLOW_RESTARTS=1    # 重启容器
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-```
-
-这套白名单只包含列出/查看容器、启动/停止/重启——**不包含**创建、删除容器或镜像、
-执行命令（exec）等高危操作。需要容器终端再加 `EXEC=1`。
-
-> 也可以直接让 NAS 的 dockerd 监听 TCP（daemon.json 加 `"hosts"`），但没有白名单过滤，
-> 仅建议在完全可信的内网使用。
+5. 基础设置里按需调整端口/数据目录
 
 ## 从 v1 二进制部署迁移（附录）
 
@@ -158,8 +120,7 @@ luci-app-sunpanel/
 ├── Makefile                       # luci feed 包定义（luci.mk，自动产出 i18n 子包）
 ├── htdocs/.../view/sunpanel.js    # LuCI 页面（状态/设置/版本 三标签）
 ├── root/
-│   ├── etc/config/sunpanel        # UCI 默认配置（含 docker_host）
-│   ├── etc/init.d/sunpanel        # procd 服务（v2 / v1 垫片双模式 + DOCKER_HOST 注入）
+│   ├── etc/init.d/sunpanel        # procd 服务（读取 /etc/sunpanel.conf，v2 / legacy 双模式）
 │   ├── etc/uci-defaults/40_luci-sunpanel
 │   ├── usr/libexec/sunpanel-call  # ucode 分发器（LuCI 后端）
 │   ├── usr/share/luci/menu.d/…json
@@ -179,8 +140,6 @@ luci-app-sunpanel/
   公钥，按「安装」一节的 scp 命令放一次即可。
 - **下载 release 失败**：版本管理页「发布源」里配置「GitHub 加速前缀」（如 `https://ghfast.top`）或
   「下载代理」（如路由器 clash 的 `http://127.0.0.1:7890`）。
-- **Docker 卡片不出现 / 列不出容器**：检查「Docker 主机」是否填写、NAS 侧 API 是否放行
-  （docker-socket-proxy 的环境变量白名单）、来源 IP 是否被 NAS 防火墙/自动封锁拦截。
 - **服务无法启动**：服务状态页查看日志；常见原因是数据目录所在分区未挂载。
 - **更新失败自动回滚**：失败原因与健康检查日志会以通知形式弹出。
 - **升级插件后页面异常**：LuCI 会话内缓存视图模块，强刷（Ctrl+Shift+R）或退出重登即可。
