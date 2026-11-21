@@ -44,10 +44,11 @@ procd 下：单进程、开机自启、崩溃自动拉起，资源占用与维�
 - `luci-app-sunpanel_1.0.0-<release>_all.apk` — 本体（服务 + LuCI 页面）
 - `luci-i18n-sunpanel-zh-cn_1.0.x_all.apk` — 简体中文翻译包
 
-**第一次安装前，先信任签名公钥**（只需一次，之后升级无需再做）：
+**第一次安装前，先信任签名公钥**（只需一次，之后升级无需再做）。公钥是构建产物之一，
+把它放到路由器的 `/etc/apk/keys/` 下即可：
 
 ```sh
-scp dist/sunpanel-local.pub.pem root@192.168.2.1:/etc/apk/keys/sunpanel-local.pem
+scp public-key.pem root@<路由器IP>:/etc/apk/keys/sunpanel-local.pem
 ```
 
 然后在 LuCI → 系统 → 软件包 → 上传软件包，依次安装两个 apk（先本体后翻译，
@@ -128,13 +129,12 @@ curl -LO https://mirror.nju.edu.cn/immortalwrt/snapshots/targets/rockchip/armv8/
 │   ├── usr/share/rpcd/acl.d/…json
 │   └── usr/share/sunpanel/        # common.sh / confgen.sh / update.sh / install-migrate.sh
 ├── po/ (templates, zh_Hans)       # 翻译源（英文源串 + 中文翻译）
-├── tools/                         # gen_po.mjs（i18n 维护）/ build_in_wsl.sh（SDK 构建）/ js_check.ps1
-└── dist/                          # 签名公钥 sunpanel-local.pub.pem（apk 构建产物不入库）
+└── tools/                         # gen_po.mjs（i18n 维护）/ build_in_wsl.sh（SDK 构建）/ js_check.ps1
 ```
 
 产物（`bin/packages/<arch>/luci/`）：
 `luci-app-sunpanel_1.0.0-<release>_all.apk`、`luci-i18n-sunpanel-zh-cn_<ver>_all.apk`、
-签名公钥 `public-key.pem`（即 `dist/sunpanel-local.pub.pem`）。
+签名公钥 `public-key.pem`。
 
 ## 故障排查
 
