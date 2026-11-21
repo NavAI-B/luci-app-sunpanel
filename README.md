@@ -115,8 +115,9 @@ curl -LO https://mirror.nju.edu.cn/immortalwrt/snapshots/targets/rockchip/armv8/
 
 ## 目录结构
 
+仓库根目录即 luci feed 包目录，clone 后把整个目录放进 `feeds/luci/applications/luci-app-sunpanel` 即可：
+
 ```
-luci-app-sunpanel/
 ├── Makefile                       # luci feed 包定义（luci.mk，自动产出 i18n 子包）
 ├── htdocs/.../view/sunpanel.js    # LuCI 页面（状态/设置/版本 三标签）
 ├── root/
@@ -127,7 +128,8 @@ luci-app-sunpanel/
 │   ├── usr/share/rpcd/acl.d/…json
 │   └── usr/share/sunpanel/        # common.sh / confgen.sh / update.sh / install-migrate.sh
 ├── po/ (templates, zh_Hans)       # 翻译源（英文源串 + 中文翻译）
-└── tools/                         # gen_po.mjs / build_in_wsl.sh / 诊断脚本
+├── tools/                         # gen_po.mjs（i18n 维护）/ build_in_wsl.sh（SDK 构建）/ js_check.ps1
+└── dist/                          # 签名公钥 sunpanel-local.pub.pem（apk 构建产物不入库）
 ```
 
 产物（`bin/packages/<arch>/luci/`）：

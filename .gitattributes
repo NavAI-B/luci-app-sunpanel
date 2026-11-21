@@ -6,7 +6,7 @@
 *.pot text eol=lf
 *.json text eol=lf
 *.md text eol=lf
-luci-app-sunpanel/root/usr/libexec/sunpanel-call text eol=lf
+root/usr/libexec/sunpanel-call text eol=lf
 *.lmo binary
 *.tar.gz binary
 *.png binary

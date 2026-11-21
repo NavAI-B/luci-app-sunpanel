@@ -41,7 +41,12 @@ if [ ! -d /root/sdkbuild/feed-luci ]; then
   git clone --depth 1 https://github.com/immortalwrt/luci.git /root/sdkbuild/feed-luci
 fi
 rm -rf /root/sdkbuild/feed-luci/applications/luci-app-sunpanel
-cp -r "/mnt/f/DSH Desktop/OpenWrt/Sun-Panel/luci-app-sunpanel" /root/sdkbuild/feed-luci/applications/luci-app-sunpanel
+mkdir -p /root/sdkbuild/feed-luci/applications/luci-app-sunpanel
+# repo root == package dir; copy only the package payload (no .git/tools/dist)
+for item in Makefile README.md htdocs po root; do
+  cp -r "/mnt/f/DSH Desktop/OpenWrt/Sun-Panel/$item" \
+    /root/sdkbuild/feed-luci/applications/luci-app-sunpanel/
+done
 
 cat > feeds.conf <<'EOF'
 src-cpy --root=package base /root/sdkbuild/feed-base
