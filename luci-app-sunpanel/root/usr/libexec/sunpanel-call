@@ -140,6 +140,7 @@ function rj(o) {
 
 function err(msg) {
 	rj({ ok: false, error: msg });
+	exit(1);
 }
 
 function act_ping() {
@@ -243,8 +244,9 @@ function act_check_update() {
 		};
 		if (type(asset.digest) == 'string' && index(asset.digest, 'sha256:') == 0)
 			e.sha256 = substr(asset.digest, 7);
-		// channel = major version line: v2.* -> V2 list, everything else -> V1 list
-		let isV2 = (substr(lc(tag), 0, 3) == 'v2.');
+		// channel = major version line of the release itself (name first,
+		// tag as fallback): v2.* -> V2 list, everything else -> V1 list
+		let isV2 = (substr(lc(e.name), 0, 3) == 'v2.') || (substr(lc(tag), 0, 3) == 'v2.');
 		if (isV2) {
 			if (beta == null)
 				beta = e;

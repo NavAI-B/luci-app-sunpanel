@@ -201,9 +201,6 @@ return view.extend({
 					setSpan
 				]) ]
 			]));
-			box.appendChild(E('div', { 'style': 'margin-top:2em', 'class': 'cbi-section' }, [
-				E('p', { 'style': 'color:#888' }, [ _('Saving writes the configuration files; the service picks them up on the next start (toggle the enable switch off/on once to restart).') ])
-			]));
 		}).catch(function(e) {
 			box.innerHTML = '';
 			box.appendChild(E('div', { 'class': 'alert alert-danger' }, [ _('Failed to load settings: %s').format(e) ]));
@@ -239,6 +236,19 @@ return view.extend({
 			E('option', { 'value': 'beta', 'selected': (channel(info) == 'beta') ? 'selected' : null }, [ 'V2' ])
 		]);
 
+		var relSpan = E('span', { 'style': 'margin-left:.5em' }, [ '' ]);
+		var saveBtn = E('button', {
+			'class': 'btn cbi-button cbi-button-action',
+			'click': ui.createHandlerFn(self, function() {
+				return self.saveReleaseSettings({
+					APP_DIR: appDirInput.value,
+					CHANNEL: chSel.value,
+					MIRROR: mirrorInput.value,
+					PROXY: proxyInput.value
+				}, relSpan);
+			})
+		}, [ _('Save settings') ]);
+
 		var updateBtn = E('button', {
 			'class': 'btn cbi-button cbi-button-action',
 			'click': ui.createHandlerFn(self, function(ev) {
@@ -250,7 +260,7 @@ return view.extend({
 				var list2 = chk2 ? ((channel(self._info) == 'stable') ? (chk2.stable_list || []) : (chk2.beta_list || [])) : [];
 				var e = list2[idx];
 				if (e)
-					self.confirmInstall(e.tag, e.url, e.sha256);
+					self.confirmInstall(e.name || e.tag, e.tag, e.url, e.sha256);
 			})
 		}, [ self._jobActive ? _('Updating…') : _('Update version') ]);
 		if (self._jobActive || !self._lastCheck)
@@ -266,17 +276,25 @@ return view.extend({
 
 		var latestText = '-';
 		var selWidget = E('span', {}, [ '-' ]);
+		var instText = info.installed_version || '-';
 		var chk = self._lastCheck;
 		if (chk) {
 			var list = (channel(info) == 'stable') ? (chk.stable_list || []) : (chk.beta_list || []);
 			if (list.length > 0) {
-				latestText = list[0].tag;
+				var all = (chk.stable_list || []).concat(chk.beta_list || []);
+				for (var k = 0; k < all.length; k++) {
+					if (all[k].tag == info.installed_version) {
+						instText = all[k].name || all[k].tag;
+						break;
+					}
+				}
+				latestText = list[0].name || list[0].tag;
 				var opts = [];
 				for (var i = 0; i < list.length; i++) {
 					opts.push(E('option', {
 						'value': '' + i,
 						'selected': i == 0 ? 'selected' : null
-					}, [ '%s  ·  %s  ·  %s'.format(list[i].tag, (list[i].date || '').slice(0, 10), fmtSize(list[i].size)) ]));
+					}, [ '%s  ·  %s  ·  %s'.format(list[i].name || list[i].tag, (list[i].date || '').slice(0, 10), fmtSize(list[i].size)) ]));
 				}
 				selWidget = self._verSel = E('select', { 'class': 'cbi-input-select', 'style': 'width:auto; min-width:280px' }, opts);
 			}
@@ -288,16 +306,14 @@ return view.extend({
 			[ _('GitHub mirror prefix'), mirrorInput ],
 			[ _('Download proxy'), proxyInput ],
 			[ '', E('div', { 'style': 'display:flex; gap:.5em; align-items:center' }, [
+				saveBtn,
 				updateBtn,
-				checkBtn
+				checkBtn,
+				relSpan
 			]) ],
-			[ _('Installed version'), info.installed_version || '-' ],
+			[ _('Installed version'), instText ],
 			[ _('Latest version'), latestText ],
 			[ _('Select version'), selWidget ]
-		]));
-
-		box.appendChild(E('div', { 'style': 'margin-top:1em; color:#888' }, [
-			_('Saved release-source settings take effect on the next check/install; the running service only restarts during an update.')
 		]));
 	},
 
@@ -317,21 +333,27 @@ return view.extend({
 		});
 	},
 
-	saveReleaseSettings: function(box, vals) {
+	saveReleaseSettings: function(v, span) {
 		var self = this;
-		return disp('conf-save', [ JSON.stringify(vals) ]).then(function() {
+		return disp('conf-save', [ JSON.stringify(v) ]).then(function() {
+			if (span) {
+				span.textContent = _('Settings saved');
+				span.style.color = '#2e7d32';
+			}
 			return disp('info');
 		}).then(function(inf) {
 			self._info = inf;
-			self.renderVersionTab(box, inf);
 		}).catch(function(e) {
-			ui.addNotification(null, E('p', {}, [ _('Operation failed: %s').format(e) ]));
+			if (span) {
+				span.textContent = _('Operation failed: %s').format(e);
+				span.style.color = 'red';
+			}
 		});
 	},
 
-	confirmInstall: function(tag, url, sha) {
+	confirmInstall: function(label, tag, url, sha) {
 		var self = this;
-		ui.showModal(_('Install Sun-Panel %s').format(tag), [
+		ui.showModal(_('Install Sun-Panel %s').format(label), [
 			E('p', {}, [ _('The current version is backed up automatically; the updater rolls back if the new version fails to start.') ]),
 			E('p', {}, [ _('The service restarts briefly. Continue?') ]),
 			E('div', { 'class': 'right' }, [
