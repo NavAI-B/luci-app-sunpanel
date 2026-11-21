@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: luci-app-sunpanel 1.0.0\n"
-"POT-Creation-Date: 2026-11-20 10:11\n"
+"POT-Creation-Date: 2026-11-21 02:15\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -84,8 +84,11 @@ msgstr "Docker 主机"
 msgid "Save settings"
 msgstr "保存配置"
 
-msgid "Saving…"
-msgstr "保存中…"
+msgid "Saving writes the configuration files; the service picks them up on the next start (toggle the enable switch off/on once to restart)."
+msgstr ""
+
+msgid "Failed to load settings: %s"
+msgstr ""
 
 msgid "Settings saved"
 msgstr "设置已保存"
@@ -93,26 +96,20 @@ msgstr "设置已保存"
 msgid "Operation failed: %s"
 msgstr "操作失败：%s"
 
-msgid "conf.ini rendering failed"
-msgstr "conf.ini 渲染失败"
-
-msgid "Configuration rendered, service restarted"
-msgstr "配置已渲染，服务已重启"
-
 msgid "Empty for direct connection, e.g. https://ghfast.top"
 msgstr "留空直连，例如 https://ghfast.top"
 
 msgid "Empty to disable, e.g. http://127.0.0.1:7890"
 msgstr "留空不使用，例如 http://127.0.0.1:7890"
 
-msgid "Check for updates"
-msgstr "检查更新"
-
 msgid "Updating…"
 msgstr "更新进行中…"
 
 msgid "Update version"
 msgstr "更新版本"
+
+msgid "Check for updates"
+msgstr "检查更新"
 
 msgid "Update channel"
 msgstr "更新通道"
@@ -128,6 +125,9 @@ msgstr "最新版本"
 
 msgid "Select version"
 msgstr "选择版本"
+
+msgid "Saved release-source settings take effect on the next check/install; the running service only restarts during an update."
+msgstr ""
 
 msgid "Check failed: %s"
 msgstr "检查失败：%s"

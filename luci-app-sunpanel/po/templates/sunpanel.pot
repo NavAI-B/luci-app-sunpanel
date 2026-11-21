@@ -80,7 +80,10 @@ msgstr ""
 msgid "Save settings"
 msgstr ""
 
-msgid "Saving…"
+msgid "Saving writes the configuration files; the service picks them up on the next start (toggle the enable switch off/on once to restart)."
+msgstr ""
+
+msgid "Failed to load settings: %s"
 msgstr ""
 
 msgid "Settings saved"
@@ -89,25 +92,19 @@ msgstr ""
 msgid "Operation failed: %s"
 msgstr ""
 
-msgid "conf.ini rendering failed"
-msgstr ""
-
-msgid "Configuration rendered, service restarted"
-msgstr ""
-
 msgid "Empty for direct connection, e.g. https://ghfast.top"
 msgstr ""
 
 msgid "Empty to disable, e.g. http://127.0.0.1:7890"
 msgstr ""
 
-msgid "Check for updates"
-msgstr ""
-
 msgid "Updating…"
 msgstr ""
 
 msgid "Update version"
+msgstr ""
+
+msgid "Check for updates"
 msgstr ""
 
 msgid "Update channel"
@@ -123,6 +120,9 @@ msgid "Latest version"
 msgstr ""
 
 msgid "Select version"
+msgstr ""
+
+msgid "Saved release-source settings take effect on the next check/install; the running service only restarts during an update."
 msgstr ""
 
 msgid "Check failed: %s"

@@ -7,9 +7,9 @@
 				"luci": [ "getInitList", "getInitConfigs" ]
 			},
 			"file": {
+				"/etc/sunpanel.conf": [ "read" ],
 				"/etc/config/sunpanel": [ "read" ]
-			},
-			"uci": [ "sunpanel" ]
+			}
 		},
 		"write": {
 			"ubus": {
@@ -19,8 +19,7 @@
 				"/usr/libexec/sunpanel-call *": [ "exec" ],
 				"/usr/libexec/sunpanel-call": [ "exec" ],
 				"/tmp/sunpanel-upload/*": [ "write" ]
-			},
-			"uci": [ "sunpanel" ]
+			}
 		}
 	}
 }

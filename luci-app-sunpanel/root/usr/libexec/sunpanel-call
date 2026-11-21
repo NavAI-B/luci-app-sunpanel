@@ -5,15 +5,16 @@
 // Usage: sunpanel-call <action> [args...]
 // NOTE: this ucode build resolves symbols in textual order (no hoisting):
 //       helpers must be declared before first use.
+// Configuration storage: /etc/sunpanel.conf (KEY='value').
 
 'use strict';
 
-import { readfile, popen, lsdir, stat, mkdir } from 'fs';
-import { cursor } from 'uci';
+import { readfile, popen, lsdir, stat, mkdir, open, unlink } from 'fs';
 
 const PLUGIN_VERSION = '1.1.0';
-const GITHUB_API = 'https://api.github.com/repos/hslr-s/sun-panel/releases?per_page=30';
+const GITHUB_API = 'https://api.github.com/repos/hslr-s/sun-panel/releases?per_page=100';
 const SHARE = '/usr/share/sunpanel';
+const CONF_FILE = '/etc/sunpanel.conf';
 
 function sq(s) {
 	return "'" + replace(s, "'", "'\\''") + "'";
@@ -39,19 +40,6 @@ function mkdir_p(path) {
 	sh_out('mkdir -p ' + sq(path));
 }
 
-let _cur = null;
-function uci_get(k, def) {
-	if (_cur == null)
-		_cur = cursor();
-	let v = _cur.get('sunpanel', 'sunpanel', k);
-	return (v == null || v == '') ? def : v;
-}
-
-function app_dir() { return uci_get('app_dir', '/mnt/mmcblk0p1/sun-panel/app'); }
-function data_dir() { return uci_get('data_dir', '/mnt/mmcblk0p1/sun-panel/data'); }
-function state_dir() { return app_dir() + '/.state'; }
-function sp_port() { return uci_get('port', '3002'); }
-
 function read_kv(path) {
 	let o = {};
 	let txt = readfile(path);
@@ -69,6 +57,38 @@ function read_kv(path) {
 	return o;
 }
 
+function read_conf() {
+	let o = {};
+	let txt = readfile(CONF_FILE);
+	if (txt == null)
+		return o;
+	let lines = split(trim(txt), '\n');
+	for (let i = 0; i < length(lines); i++) {
+		let line = lines[i];
+		if (line == '' || substr(line, 0, 1) == '#')
+			continue;
+		let p = split(line, '=');
+		if (length(p) < 2)
+			continue;
+		let v = join('=', slice(p, 1));
+		// strip surrounding single quotes
+		if (length(v) >= 2 && substr(v, 0, 1) == "'" && substr(v, length(v) - 1) == "'")
+			v = substr(v, 1, length(v) - 2);
+		o[p[0]] = v;
+	}
+	return o;
+}
+
+function conf_val(k, def) {
+	let v = read_conf()[k];
+	return (v == null || v == '') ? def : v;
+}
+
+function app_dir() { return conf_val('APP_DIR', '/mnt/mmcblk0p1/sun-panel/app'); }
+function data_dir() { return conf_val('DATA_DIR', '/mnt/mmcblk0p1/sun-panel/data'); }
+function state_dir() { return app_dir() + '/.state'; }
+function sp_port() { return conf_val('PORT', '3002'); }
+
 function installed_version() {
 	let v = readfile(app_dir() + '/version');
 	return (v == null) ? '' : trim(v);
@@ -79,7 +99,7 @@ function v2_present() {
 }
 
 function legacy_dir() {
-	let d = uci_get('legacy_v1_dir', '');
+	let d = conf_val('LEGACY_V1_DIR', '');
 	if (d == '')
 		return '';
 	if (substr(d, 0, 1) != '/')
@@ -122,8 +142,6 @@ function err(msg) {
 	rj({ ok: false, error: msg });
 }
 
-/* ---------------- actions ---------------- */
-
 function act_ping() {
 	rj({ ok: true, pong: true, plugin_version: PLUGIN_VERSION });
 }
@@ -149,7 +167,6 @@ function act_info() {
 	else
 		mode = 'none';
 
-	// reflect the version that is actually running
 	let legacy_ver = trim(readfile('/usr/share/sunpanel/version') ?? '');
 	let ver = (mode == 'v2') ? installed_version() : legacy_ver;
 
@@ -169,19 +186,20 @@ function act_info() {
 			binary: (stat('/usr/sbin/sun-panel') != null),
 			version_file: legacy_ver
 		},
-		channel: uci_get('channel', 'beta'),
-		mirror: uci_get('mirror', ''),
-		proxy_set: uci_get('proxy', '') != '',
+		channel: conf_val('CHANNEL', 'beta'),
+		mirror: conf_val('MIRROR', ''),
+		proxy_set: conf_val('PROXY', '') != '',
+		proxy: conf_val('PROXY', ''),
 		arch: goarch()
 	});
 }
 
 function act_check_update() {
-	let proxy = uci_get('proxy', '');
+	let proxy = conf_val('PROXY', '');
 	let cmd = sprintf('curl -fsS -m 25 -A %s %s %s',
 		sq('luci-app-sunpanel/' + PLUGIN_VERSION),
 		(proxy != '') ? '-x ' + sq(proxy) : '',
-		sq(GITHUB_API + '?per_page=100'));
+		sq(GITHUB_API));
 	let out = sh_out(cmd);
 	if (out == null || trim(out) == '')
 		err('GitHub API unreachable (network, mirror or proxy issue)');
@@ -202,10 +220,10 @@ function act_check_update() {
 	for (let i = 0; i < length(rels); i++) {
 		let r = rels[i];
 		let tag = r.tag_name;
+		// match by pattern, not exact tag: upstream renamed tags
+		// (release v2.0.2-beta.5 ships assets named ...beta261118...)
 		let asset = null;
 		for (let j = 0; j < length(r.assets); j++) {
-			// match by pattern, not exact tag: upstream renamed tags
-			// (release v2.0.2-beta.5 ships assets named ...beta261118...)
 			let n = lc(r.assets[j].name);
 			if (substr(n, 0, 10) == 'sun-panel_' && substr(n, length(n) - length(suffix)) == suffix) {
 				asset = r.assets[j];
@@ -240,8 +258,7 @@ function act_check_update() {
 				push(stable_list, e);
 		}
 	}
-	rj({ ok: true, current: installed_version(), arch: arch,
-		stable: stable, beta: beta,
+	rj({ ok: true, current: installed_version(), arch: arch, stable: stable, beta: beta,
 		stable_list: stable_list, beta_list: beta_list });
 }
 
@@ -309,6 +326,70 @@ function act_logs() {
 		err('unknown log: ' + name);
 }
 
+function act_legacy_force() {
+	let onoff = ARGV[1];
+	mkdir_p(state_dir());
+	if (onoff == 'on') {
+		if (legacy_dir() == '')
+			err('no legacy v1 install found');
+		let f = open(state_dir() + '/force-legacy', 'w');
+		f.write('1\n');
+		f.close();
+		sh_out('/etc/init.d/sunpanel restart >/dev/null 2>&1');
+		rj({ ok: true, mode: 'legacy-forced' });
+	} else {
+		unlink(state_dir() + '/force-legacy');
+		sh_out('/etc/init.d/sunpanel restart >/dev/null 2>&1');
+		rj({ ok: true, mode: v2_present() ? 'v2' : 'auto' });
+	}
+}
+
+function act_conf_get() {
+	rj({
+		ok: true,
+		ENABLED: conf_val('ENABLED', '1'),
+		PORT: sp_port(),
+		HTTPS_PORT: conf_val('HTTPS_PORT', '3003'),
+		LISTEN_ADDRESS: conf_val('LISTEN_ADDRESS', '0.0.0.0'),
+		TOKEN_EXPIRES: conf_val('TOKEN_EXPIRES', '168'),
+		DATA_DIR: data_dir(),
+		APP_DIR: app_dir(),
+		DOCKER_HOST: conf_val('DOCKER_HOST', ''),
+		CHANNEL: conf_val('CHANNEL', 'beta'),
+		MIRROR: conf_val('MIRROR', ''),
+		PROXY: conf_val('PROXY', '')
+	});
+}
+
+function act_conf_save() {
+	let vals;
+	try {
+		vals = json(ARGV[1] ?? '{}');
+	} catch (e) {
+		err('invalid payload');
+	}
+	if (type(vals) != 'object')
+		err('invalid payload');
+
+	// overlay provided values onto the current file, write canonical form
+	let cur = read_conf();
+	let order = [ 'ENABLED', 'PORT', 'HTTPS_PORT', 'LISTEN_ADDRESS', 'TOKEN_EXPIRES',
+		'DATA_DIR', 'APP_DIR', 'DOCKER_HOST', 'CHANNEL', 'MIRROR', 'PROXY' ];
+	let lines = [];
+	for (let i = 0; i < length(order); i++) {
+		let key = order[i];
+		let v = (vals[key] != null) ? '' + vals[key] : (cur[key] ?? '');
+		push(lines, key + "='" + replace(v, "'", "'\\''") + "'");
+	}
+	mkdir_p('/etc');
+	let f = open(CONF_FILE, 'w');
+	f.write('# luci-app-sunpanel configuration (sourced by /etc/init.d/sunpanel)\n');
+	for (let i = 0; i < length(lines); i++)
+		f.write(lines[i] + '\n');
+	f.close();
+	rj({ ok: true, saved: true });
+}
+
 /* ---------------- main ---------------- */
 
 let action = ARGV[0] ?? '';
@@ -324,6 +405,9 @@ switch (action) {
 	case 'release-delete':  act_release_delete(); break;
 	case 'conf-render':     act_conf_render(); break;
 	case 'logs':            act_logs(); break;
+	case 'legacy-force':    act_legacy_force(); break;
+	case 'conf-get':        act_conf_get(); break;
+	case 'conf-save':       act_conf_save(); break;
 	default:
 		err('unknown action: ' + action);
 }

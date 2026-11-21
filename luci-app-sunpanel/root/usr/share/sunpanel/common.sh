@@ -1,24 +1,29 @@
 #!/bin/sh
 # luci-app-sunpanel -- shared helpers
-# Sourced by: /etc/init.d/sunpanel, confgen.sh, update.sh, migrate.sh,
+# Sourced by: /etc/init.d/sunpanel, confgen.sh, update.sh,
 #              install-migrate.sh
+#
+# Configuration storage: /etc/sunpanel.conf (KEY='value' shell-sourceable).
+# UCI is no longer used at runtime.
 
-SP_UCI_CFG=/etc/config/sunpanel
+SP_CONF=/etc/sunpanel.conf
 SP_SHARE=/usr/share/sunpanel
 
 sp_log() {
 	logger -t luci-app-sunpanel "$*"
 }
 
-# read option from the named UCI section (empty if unset)
-sp_uci() {
-	uci -q get "sunpanel.sunpanel.$1" 2>/dev/null
+# read KEY from the plugin config file (empty if unset)
+sp_conf() {
+	local v
+	v="$(sed -n "s/^${1}='\\(.*\\)'$/\\1/p" "$SP_CONF" 2>/dev/null | tail -n 1)"
+	printf '%s' "$v"
 }
 
-# read option with fallback default
-sp_uci_default() {
+# read KEY with fallback default
+sp_conf_default() {
 	local v
-	v="$(sp_uci "$1")"
+	v="$(sp_conf "$1")"
 	if [ -n "$v" ]; then
 		printf '%s' "$v"
 	else
@@ -27,11 +32,11 @@ sp_uci_default() {
 }
 
 sp_app_dir() {
-	sp_uci_default app_dir "/mnt/mmcblk0p1/sun-panel/app"
+	sp_conf_default APP_DIR "/mnt/mmcblk0p1/sun-panel/app"
 }
 
 sp_data_dir() {
-	sp_uci_default data_dir "/mnt/mmcblk0p1/sun-panel/data"
+	sp_conf_default DATA_DIR "/mnt/mmcblk0p1/sun-panel/data"
 }
 
 sp_state_dir() {
@@ -39,15 +44,13 @@ sp_state_dir() {
 }
 
 sp_port() {
-	sp_uci_default port 3002
+	sp_conf_default PORT 3002
 }
 
 # absolute-normalized legacy v1 configuration directory (empty when none)
-# - installer stores it in option legacy_v1_dir
-# - tolerates the historical missing-leading-slash form ("mnt/xx" -> "/mnt/xx")
 sp_legacy_dir() {
 	local d
-	d="$(sp_uci legacy_v1_dir)"
+	d="$(sp_conf LEGACY_V1_DIR)"
 	[ -n "$d" ] || return 0
 	case "$d" in
 		/*) ;;

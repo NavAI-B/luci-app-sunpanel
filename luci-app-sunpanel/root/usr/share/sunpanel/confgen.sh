@@ -12,12 +12,12 @@
 
 data_dir="$(sp_data_dir)"
 app_dir="$(sp_app_dir)"
-port="${SP_CONF_PORT:-$(sp_uci_default port 3002)}"
-https_port="$(sp_uci_default https_port 3003)"
-listen="$(sp_uci_default listen 0.0.0.0)"
-token_expires="$(sp_uci_default token_expires 168)"
-cert_path="$(sp_uci cert_path)"
-key_path="$(sp_uci key_path)"
+port="${SP_CONF_PORT:-$(sp_conf_default port 3002)}"
+https_port="$(sp_conf_default https_port 3003)"
+listen="$(sp_conf_default listen 0.0.0.0)"
+token_expires="$(sp_conf_default token_expires 168)"
+cert_path="$(sp_conf cert_path)"
+key_path="$(sp_conf key_path)"
 
 [ "$data_dir" != "" ] || { sp_log "confgen: data_dir empty"; exit 1; }
 mkdir -p "$data_dir" || { sp_log "confgen: cannot create $data_dir"; exit 1; }

@@ -3,9 +3,8 @@
 'require fs';
 'require ui';
 'require rpc';
-'require uci';
 'require poll';
-'require dom';
+'require form';
 
 var callSetInit = rpc.declare({
 	object: 'luci',
@@ -67,17 +66,16 @@ return view.extend({
 	_lastCheck: null,
 	_verSel: null,
 	_setSpan: null,
+	_statusBox: null,
+	_versionBox: null,
 
 	load: function() {
-		return Promise.all([
-			disp('info'),
-			uci.load('sunpanel')
-		]);
+		return disp('info');
 	},
 
-	render: function(data) {
+	render: function(info) {
 		var self = this;
-		self._info = data[0];
+		self._info = info;
 
 		var container = E('div', { 'class': 'cbi-map' });
 
@@ -89,17 +87,20 @@ return view.extend({
 
 		/* ================= status tab ================= */
 		var statusBox = E('div', {}, E('em', {}, _('Loading…')));
+		self._statusBox = statusBox;
 		tabStatus.appendChild(statusBox);
-		this.renderStatusBox(statusBox, self._info);
-
-		/* ================= settings tab ================= */
-		var settingsBox = E('div', {}, E('em', {}, _('Loading…')));
-		tabSettings.appendChild(settingsBox);
+		this.renderStatusBox(statusBox, info);
 
 		/* ================= version tab ================= */
 		var versionBox = E('div', {});
+		self._versionBox = versionBox;
 		tabVersion.appendChild(versionBox);
-		this.renderVersionTab(versionBox, self._info);
+		this.renderVersionTab(versionBox, info);
+
+		/* ================= settings tab (async prefill) ================= */
+		var settingsBox = E('div', {}, E('em', {}, _('Loading…')));
+		self._setSpan = null;
+		tabSettings.appendChild(settingsBox);
 
 		/* ---------- polling ---------- */
 		poll.add(L.bind(function() {
@@ -129,9 +130,11 @@ return view.extend({
 			}).catch(function() {});
 		}, this), 3);
 
-		this.renderSettings(settingsBox);
-		ui.tabs.initTabGroup(tabs.childNodes);
-		return container;
+		// settings tab: prefill from dispatcher, then init tabs
+		return this.renderSettings(settingsBox).then(function() {
+			ui.tabs.initTabGroup(tabs.childNodes);
+			return container;
+		});
 	},
 
 	renderStatusBox: function(box, info) {
@@ -156,95 +159,68 @@ return view.extend({
 
 	renderSettings: function(box) {
 		var self = this;
-		box.innerHTML = '';
+		return disp('conf-get').then(function(conf) {
+			box.innerHTML = '';
 
-		var uciGet = function(k, def) {
-			var v = uci.get('sunpanel', 'sunpanel', k);
-			return (v == null || v === '') ? (def || '') : v;
-		};
+			var enabledCb = E('input', {
+				'type': 'checkbox', 'class': 'cbi-input-checkbox',
+				'checked': conf.ENABLED == '1' ? 'checked' : null
+			});
+			var portInput = textInput(conf.PORT, '3002');
+			var httpsInput = textInput(conf.HTTPS_PORT, '3003');
+			var listenInput = textInput(conf.LISTEN_ADDRESS, '0.0.0.0');
+			var tokenInput = textInput(conf.TOKEN_EXPIRES, '168');
+			var dataDirInput = textInput(conf.DATA_DIR);
+			var dockerHostInput = textInput(conf.DOCKER_HOST, _('Empty for local /var/run/docker.sock, e.g. tcp://192.168.2.9:2375'));
+			var setSpan = E('span', { 'style': 'margin-left:.5em' }, [ '' ]);
+			self._setSpan = setSpan;
 
-		var enabledCb = E('input', {
-			'type': 'checkbox', 'class': 'cbi-input-checkbox',
-			'checked': uciGet('enabled', '1') == '1' ? 'checked' : null
-		});
-		var portInput = textInput(uciGet('port', '3002'));
-		var httpsInput = textInput(uciGet('https_port', '3003'));
-		var listenInput = textInput(uciGet('listen', '0.0.0.0'));
-		var tokenInput = textInput(uciGet('token_expires', '168'));
-		var dataDirInput = textInput(uciGet('data_dir', '/mnt/mmcblk0p1/sun-panel/data'));
-		var dockerHostInput = textInput(uciGet('docker_host', ''), _('Empty for local /var/run/docker.sock, e.g. tcp://192.168.2.9:2375'));
-		var setSpan = E('span', { 'style': 'margin-left:.5em' }, [ '' ]);
-		self._setSpan = setSpan;
-
-		box.appendChild(kvTable([
-			[ _('Enable service'), enabledCb ],
-			[ _('HTTP port'), portInput ],
-			[ _('HTTPS port'), httpsInput ],
-			[ _('Listen address'), listenInput ],
-			[ _('Token lifetime (hours)'), tokenInput ],
-			[ _('Data directory'), dataDirInput ],
-			[ _('Docker host'), dockerHostInput ],
-			[ '', E('div', { 'style': 'display:flex; align-items:center; gap:.5em' }, [
-				E('button', {
-					'class': 'btn cbi-button cbi-button-action',
-					'click': ui.createHandlerFn(self, function() {
-						return self.saveSettings(box, {
-							enabled: enabledCb.checked ? '1' : '0',
-							port: portInput.value,
-							https_port: httpsInput.value,
-							listen: listenInput.value,
-							token_expires: tokenInput.value,
-							data_dir: dataDirInput.value,
-							docker_host: dockerHostInput.value
-						});
-					})
-				}, [ _('Save settings') ]),
-				setSpan
-			]) ]
-		]));
-		box.appendChild(E('div', { 'style': 'margin-top:2em' }));
-	},
-
-	saveSettings: function(box, v) {
-		var self = this;
-		if (self._setSpan) {
-			self._setSpan.textContent = _('Saving…');
-			self._setSpan.style.color = '';
-		}
-		uci.set('sunpanel', 'sunpanel', 'enabled', v.enabled);
-		uci.set('sunpanel', 'sunpanel', 'port', v.port);
-		uci.set('sunpanel', 'sunpanel', 'https_port', v.https_port);
-		uci.set('sunpanel', 'sunpanel', 'listen', v.listen);
-		uci.set('sunpanel', 'sunpanel', 'token_expires', v.token_expires);
-		uci.set('sunpanel', 'sunpanel', 'data_dir', v.data_dir);
-		uci.set('sunpanel', 'sunpanel', 'docker_host', v.docker_host);
-		return uci.save().then(function() {
-			return uci.apply(15);
-		}).then(function() {
-			return disp('info');
-		}).then(function(inf) {
-			self._info = inf;
-			if (self._setSpan) {
-				self._setSpan.textContent = _('Settings saved');
-				self._setSpan.style.color = '#2e7d32';
-			}
+			box.appendChild(kvTable([
+				[ _('Enable service'), enabledCb ],
+				[ _('HTTP port'), portInput ],
+				[ _('HTTPS port'), httpsInput ],
+				[ _('Listen address'), listenInput ],
+				[ _('Token lifetime (hours)'), tokenInput ],
+				[ _('Data directory'), dataDirInput ],
+				[ _('Docker host'), dockerHostInput ],
+				[ '', E('div', { 'style': 'display:flex; align-items:center; gap:.5em' }, [
+					E('button', {
+						'class': 'btn cbi-button cbi-button-action',
+						'click': ui.createHandlerFn(self, function() {
+							return self.saveSettings({
+								ENABLED: enabledCb.checked ? '1' : '0',
+								PORT: portInput.value,
+								HTTPS_PORT: httpsInput.value,
+								LISTEN_ADDRESS: listenInput.value,
+								TOKEN_EXPIRES: tokenInput.value,
+								DATA_DIR: dataDirInput.value,
+								DOCKER_HOST: dockerHostInput.value
+							}, setSpan);
+						})
+					}, [ _('Save settings') ]),
+					setSpan
+				]) ]
+			]));
+			box.appendChild(E('div', { 'style': 'margin-top:2em', 'class': 'cbi-section' }, [
+				E('p', { 'style': 'color:#888' }, [ _('Saving writes the configuration files; the service picks them up on the next start (toggle the enable switch off/on once to restart).') ])
+			]));
 		}).catch(function(e) {
-			if (self._setSpan) {
-				self._setSpan.textContent = _('Operation failed: %s').format(e);
-				self._setSpan.style.color = 'red';
-			}
+			box.innerHTML = '';
+			box.appendChild(E('div', { 'class': 'alert alert-danger' }, [ _('Failed to load settings: %s').format(e) ]));
 		});
 	},
 
-	restartService: function(ev) {
-		return fs.exec_direct(DISPATCH, [ 'conf-render' ], 'json').then(function(res) {
-			if (!res.ok)
-				throw (res.error || _('conf.ini rendering failed'));
-			return callSetInit('sunpanel', 'restart');
-		}).then(function() {
-			ui.addNotification(null, E('p', {}, [ _('Configuration rendered, service restarted') ]));
+	saveSettings: function(v, setSpan) {
+		return disp('conf-save', [ JSON.stringify(v) ]).then(function() {
+			if (setSpan) {
+				setSpan.textContent = _('Settings saved');
+				setSpan.style.color = '#2e7d32';
+			}
 		}).catch(function(e) {
-			ui.addNotification(null, E('p', {}, [ _('Operation failed: %s').format(e) ]));
+			if (setSpan) {
+				setSpan.textContent = _('Operation failed: %s').format(e);
+				setSpan.style.color = 'red';
+			}
 		});
 	},
 
@@ -257,15 +233,28 @@ return view.extend({
 
 		var appDirInput = textInput(info.app_dir);
 		var mirrorInput = textInput(info.mirror || '', _('Empty for direct connection, e.g. https://ghfast.top'));
-		var proxyVal = '';
-		try {
-			proxyVal = uci.get('sunpanel', 'sunpanel', 'proxy') || '';
-		} catch (e) {}
-		var proxyInput = textInput(proxyVal, _('Empty to disable, e.g. http://127.0.0.1:7890'));
+		var proxyInput = textInput(info.proxy || '', _('Empty to disable, e.g. http://127.0.0.1:7890'));
 		var chSel = E('select', { 'class': 'cbi-input-select', 'style': 'width:auto' }, [
 			E('option', { 'value': 'stable', 'selected': (channel(info) == 'stable') ? 'selected' : null }, [ 'V1' ]),
 			E('option', { 'value': 'beta', 'selected': (channel(info) == 'beta') ? 'selected' : null }, [ 'V2' ])
 		]);
+
+		var updateBtn = E('button', {
+			'class': 'btn cbi-button cbi-button-action',
+			'click': ui.createHandlerFn(self, function(ev) {
+				if (self._jobActive)
+					return;
+				var sel = self._verSel;
+				var idx = sel ? +sel.value : -1;
+				var chk2 = self._lastCheck;
+				var list2 = chk2 ? ((channel(self._info) == 'stable') ? (chk2.stable_list || []) : (chk2.beta_list || [])) : [];
+				var e = list2[idx];
+				if (e)
+					self.confirmInstall(e.tag, e.url, e.sha256);
+			})
+		}, [ self._jobActive ? _('Updating…') : _('Update version') ]);
+		if (self._jobActive || !self._lastCheck)
+			updateBtn.disabled = 'disabled';
 
 		var checkBtn = E('button', {
 			'class': 'btn cbi-button cbi-button-action',
@@ -287,49 +276,28 @@ return view.extend({
 					opts.push(E('option', {
 						'value': '' + i,
 						'selected': i == 0 ? 'selected' : null
-					}, [ '%s  ·  %s  ·  %s'.format(list[i].name || list[i].tag, (list[i].date || '').slice(0, 10), fmtSize(list[i].size)) ]));
+					}, [ '%s  ·  %s  ·  %s'.format(list[i].tag, (list[i].date || '').slice(0, 10), fmtSize(list[i].size)) ]));
 				}
 				selWidget = self._verSel = E('select', { 'class': 'cbi-input-select', 'style': 'width:auto; min-width:280px' }, opts);
 			}
 		}
-
-		var updateBtn = E('button', {
-			'class': 'btn cbi-button cbi-button-action',
-			'click': ui.createHandlerFn(self, function(ev) {
-				if (self._jobActive)
-					return;
-				var sel = self._verSel;
-				var idx = sel ? +sel.value : -1;
-				var chk2 = self._lastCheck;
-				var list2 = chk2 ? ((channel(self._info) == 'stable') ? (chk2.stable_list || []) : (chk2.beta_list || [])) : [];
-				var e = list2[idx];
-				if (e)
-					self.confirmInstall(e.tag, e.url, e.sha256);
-			})
-		}, [ self._jobActive ? _('Updating…') : _('Update version') ]);
-		if (self._jobActive || !self._lastCheck)
-			updateBtn.disabled = 'disabled';
 
 		box.appendChild(kvTable([
 			[ _('Program directory'), appDirInput ],
 			[ _('Update channel'), chSel ],
 			[ _('GitHub mirror prefix'), mirrorInput ],
 			[ _('Download proxy'), proxyInput ],
-			[ '', E('button', {
-				'class': 'btn cbi-button cbi-button-action',
-				'click': ui.createHandlerFn(self, function() {
-					return self.saveReleaseSettings(box, {
-						app_dir: appDirInput.value,
-						channel: chSel.value,
-						mirror: mirrorInput.value,
-						proxy: proxyInput.value
-					});
-				})
-			}, [ _('Save settings') ]) ],
+			[ '', E('div', { 'style': 'display:flex; gap:.5em; align-items:center' }, [
+				updateBtn,
+				checkBtn
+			]) ],
 			[ _('Installed version'), info.installed_version || '-' ],
 			[ _('Latest version'), latestText ],
-			[ _('Select version'), selWidget ],
-			[ '', E('div', { 'style': 'display:flex; gap:.5em; align-items:center' }, [ updateBtn, checkBtn ]) ]
+			[ _('Select version'), selWidget ]
+		]));
+
+		box.appendChild(E('div', { 'style': 'margin-top:1em; color:#888' }, [
+			_('Saved release-source settings take effect on the next check/install; the running service only restarts during an update.')
 		]));
 	},
 
@@ -351,13 +319,7 @@ return view.extend({
 
 	saveReleaseSettings: function(box, vals) {
 		var self = this;
-		uci.set('sunpanel', 'sunpanel', 'app_dir', vals.app_dir);
-		uci.set('sunpanel', 'sunpanel', 'channel', vals.channel);
-		uci.set('sunpanel', 'sunpanel', 'mirror', vals.mirror);
-		uci.set('sunpanel', 'sunpanel', 'proxy', vals.proxy);
-		return uci.save().then(function() {
-			return uci.apply(10);
-		}).then(function() {
+		return disp('conf-save', [ JSON.stringify(vals) ]).then(function() {
 			return disp('info');
 		}).then(function(inf) {
 			self._info = inf;
@@ -390,6 +352,7 @@ return view.extend({
 		var self = this;
 		self._jobActive = true;
 		return disp('update-start', [ tag, url, sha || '-' ]).then(function() {
+			self.renderVersionTab(self._versionBox, self._info);
 		}).catch(function(e) {
 			self._jobActive = false;
 			ui.addNotification(null, E('p', {}, [ _('Failed to start update: %s').format(e) ]));
