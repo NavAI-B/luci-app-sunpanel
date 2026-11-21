@@ -1,11 +1,21 @@
-# luci-app-sunpanel — Sun-Panel v2 的 OpenWrt/ImmortalWrt 管理插件
+# luci-app-sunpanel — 在 OpenWrt 上原生运行 Sun-Panel v2
 
-针对 Sun-Panel v1 停更、官方主推 v2 迁移的现状，为 OpenWrt/ImmortalWrt 重新设计的 LuCI 管理插件。
-在保留 v1 数据的前提下完成 v1 → v2 迁移，并负责后续版本更新、基础配置与远程 Docker 管理。
+将 [Sun-Panel](https://github.com/hslr-s/sun-panel) v2 以**原生二进制**方式部署在
+OpenWrt/ImmortalWrt 上，并提供 LuCI 管理界面：服务启停、版本更新（对齐 GitHub Releases）、
+基础配置，以及**远程 Docker 主机**接入——路由器上无需安装 Docker，也能管理 NAS 上的容器。
 
 - 上游项目: <https://github.com/hslr-s/sun-panel>
-- 官方文档: <https://doc.sun-panel.top>（v2 迁移推荐路线：v1 导出备份包 → 单独部署 v2 → 导入恢复）
+- 官方文档: <https://doc.sun-panel.top>
 - 实测环境: ImmortalWrt 25.12-SNAPSHOT · rockchip/armv8 (aarch64_generic) · apk 包管理 · LuCI (JS 渲染) · luci-base 26.126
+- 适配最低需求: 任意能跑 aarch64/armv7/x86_64 musl 的 OpenWrt 设备，约 40MB 可写空间（数据分区更佳）
+
+## 为什么不用 Docker 部署
+
+Sun-Panel 官方主推 Docker 部署，但在路由器上再套一层 Docker 意味着：占用更大的存储与内存、
+依赖 overlay 扩容、与 OpenWrt 的网络栈互相纠缠。本项目把 Sun-Panel v2 的官方二进制直接跑在
+procd 下：单进程、开机自启、崩溃自动拉起，资源占用与维护成本都最小。
+
+如果你更习惯 Docker 部署 Sun-Panel 本体，本项目同样兼容——只是它的定位是「路由器上不要 Docker」。
 
 ## 功能
 
@@ -19,46 +29,17 @@
 
 ### 设计要点
 
-- **overlay 友好**：apk 包只装骨架；二进制与 web 前端由版本管理器下载到数据分区（默认
-  `/mnt/mmcblk0p1/sun-panel/app`），系统分区不再被大文件与版本迭代挤爆。
-- **v1 兼容垫片**：v2 未安装时，init 脚本自动沿用旧 v1 二进制与配置继续服务，装 v2 期间面板不掉线。
-- **数据零风险**：v2 使用全新数据目录；v1 数据目录全程只读，确认 v2 正常后可自行删除。
+- **overlay 友好**：apk 包只装骨架；Sun-Panel 二进制与 web 前端由版本管理器下载到数据分区
+  （默认 `/mnt/mmcblk0p1/sun-panel/app`），系统分区不再被大文件与版本迭代挤爆。
+- **Release 对齐**：版本列表直接与 GitHub Releases 同步，按大版本线分组（V1 / V2），
+  资产匹配按文件名模式而非 tag 精确对照——上游连 tag 与资产文件的命名都对不上也能正确识别。
 - **conf.ini 托管**：UCI 为唯一配置源，启动时按 v2 实测格式渲染（含 v2 新增 `micro_app_path`）；
   `manage_conf=0` 时只生成一次，保留手工修改。
+- **远程 Docker 管理**：v2 的 Docker 管理器走标准 Docker Go 客户端，尊重 `DOCKER_HOST`——
+  在基础设置里填 `tcp://NAS_IP:2375` 即可管理 NAS 上的容器，路由器无需安装 Docker（见下文）。
 - **网络不友好环境**：支持 GitHub 加速前缀（镜像）与 HTTP 代理两种下载加速方式。
-- **远程 Docker 管理**：v2 内置的 Docker 管理器通过标准 Docker 客户端支持 `DOCKER_HOST`——
-  在基础设置里填 `tcp://NAS_IP:2375` 即可管理 NAS 上的容器，路由器无需安装 docker。
-  NAS 侧推荐配一个 docker-socket-proxy 容器白名单放行（见下方迁移一节的环境变量清单）。
 
-### 版本检测说明
-
-版本列表直接与 GitHub Releases 对齐，按**大版本线**分组：
-
-- **V2 渠道**：全部 `v2.*` release（当前为 v2.0.2-beta.5 与 V2.0.2-beta26111701）
-- **V1 渠道**：全部 v1.x 正式版（v1.3.0 → v1.8.1 共 10 个）
-
-资产匹配按文件名模式（`sun-panel_*_linux_<架构>.tar.gz`）而非 tag 精确对照——上游连
-tag 与资产文件的命名都对不上（release v2.0.2-beta.5 内的资产叫 beta261118）也能正确识别。
-更早的 v2 beta（260912/261101/261110 等）官方未发布到 GitHub（走网盘分发），不在可检测范围。
-
-### v1 → v2 迁移（手动，两分钟）
-
-1. 打开旧 v1 面板（系统设置 → 备份恢复），导出备份 zip 到本机
-2. LuCI 版本管理 → 通道切到「V2」→ 安装最新 v2（服务自动切换，端口沿用 3002）
-3. 打开 v2 面板（默认账号 `admin@sun.cc` / `12345678`），在其「系统设置 → 备份恢复」导入备份 zip
-4. 确认 v2 正常后清理 v1 残留：
-
-```sh
-rm -f /usr/sbin/sun-panel                    # v1 二进制（删后无法回退 v1）
-rm -rf /usr/share/sunpanel                   # v1 web 残留（插件脚本目录，会一起删掉）
-rm -rf /mnt/mmcblk0p1/Configs/SunPanel       # v1 数据目录（含旧数据库/上传文件）
-rm -f /etc/config/sunpanel.v1bak             # v1 配置备份
-```
-
-注意：`/usr/share/sunpanel` 在新版插件下同时是**插件脚本目录**，上面的 `rm -rf` 会把它整个删掉，
-删完需重新安装一次本插件 apk（或在迁移完成前跳过这条，仅删除其中 `web` 等旧文件）。
-
-## 安装（apk 包，LuCI 软件包界面上传）
+## 安装
 
 产物为两个标准 apk 包（ImmortalWrt SDK 构建、prime256v1 签名）：
 
@@ -84,6 +65,69 @@ apk add ./luci-i18n-sunpanel-zh-cn_1.0.6.apk
 卸载：LuCI 软件包列表中移除，或 `apk del luci-i18n-sunpanel-zh-cn luci-app-sunpanel`。
 配置 `/etc/config/sunpanel` 与数据、程序目录默认保留。
 
+## 快速开始（全新安装）
+
+1. 服务状态页确认服务运行（首次安装只有骨架，还没有 Sun-Panel 本体）
+2. 版本管理 → 更新通道切到「V2」→ 检查更新 → 选择最新版本 → 更新版本
+   （自动下载 ~19MB 到数据分区、SHA256 校验、原子切换、健康检查；失败自动回滚）
+3. 网络不好时先在基础设置里配「GitHub 加速前缀」（如 `https://ghfast.top`）或「下载代理」，
+   或用「离线安装」上传本地下载好的 release 包
+4. 打开面板，用 v2 首次启动的账号登录（默认 `admin@sun.cc` / `12345678`），**立即修改密码**
+5. 基础设置里按需调整端口/数据目录；有 NAS Docker 的填「Docker 主机」启用容器管理
+
+## 远程 Docker 管理（管理 NAS 上的容器）
+
+v2 内置的 Docker 管理器通过标准 Docker 客户端工作，尊重 `DOCKER_HOST` 环境变量。
+在基础设置里把「Docker 主机」填成 NAS 的 Docker API 地址（如 `tcp://192.168.2.9:2375`），
+保存并重启后，v2 界面的 Docker 卡片即可列出并控制 NAS 上的容器。
+
+NAS 侧需要把 Docker API 暴露为 TCP。推荐在 NAS 的 Docker 管理界面里部署
+**docker-socket-proxy** 容器——白名单放行，不暴露高危接口：
+
+```yaml
+services:
+  docker-socket-proxy:
+    image: tecnativa/docker-socket-proxy
+    container_name: docker-socket-proxy
+    restart: unless-stopped
+    ports:
+      - "2375:2375"
+    environment:
+      - CONTAINERS=1        # 查看/列出容器
+      - IMAGES=1            # 查看镜像
+      - INFO=1
+      - PING=1
+      - VERSION=1
+      - ALLOW_START=1       # 启动容器
+      - ALLOW_STOP=1        # 停止容器
+      - ALLOW_RESTARTS=1    # 重启容器
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+```
+
+这套白名单只包含列出/查看容器、启动/停止/重启——**不包含**创建、删除容器或镜像、
+执行命令（exec）等高危操作。需要容器终端再加 `EXEC=1`。
+
+> 也可以直接让 NAS 的 dockerd 监听 TCP（daemon.json 加 `"hosts"`），但没有白名单过滤，
+> 仅建议在完全可信的内网使用。
+
+## 从 v1 二进制部署迁移（附录）
+
+之前用 v1.8.x 二进制直接跑在路由器上的用户，迁移到 v2 只需三步：
+
+1. 打开旧 v1 面板（系统设置 → 备份恢复），导出备份 zip 到本机
+2. 版本管理 → 通道切到「V2」→ 安装最新 v2（服务自动切换，端口沿用 3002）
+3. 打开 v2 面板，在其「系统设置 → 备份恢复」导入备份 zip
+
+v2 使用全新数据目录，旧 v1 的数据目录全程只读；确认 v2 正常后清理残留：
+
+```sh
+rm -f /usr/sbin/sun-panel                    # v1 二进制（删后无法回退 v1）
+rm -rf /usr/share/sunpanel                   # v1 web 残留
+rm -rf /mnt/mmcblk0p1/Configs/SunPanel       # v1 数据目录（含旧数据库/上传文件）
+rm -f /etc/config/sunpanel.v1bak             # v1 配置备份（若有）
+```
+
 ## 构建（ImmortalWrt SDK，WSL 实测）
 
 严格按第三方包规范：包源码放入 luci feed（`feeds/luci/applications/luci-app-sunpanel`），
@@ -92,7 +136,7 @@ apk add ./luci-i18n-sunpanel-zh-cn_1.0.6.apk
 WSL Ubuntu 22.04 内一键复现（详见 `tools/build_in_wsl.sh`）：
 
 ```sh
-# 1. 下载对应 SDK（本机目标 rockchip/armv8）
+# 1. 下载对应 SDK（以 rockchip/armv8 为例，按你的目标架构替换）
 curl -LO https://mirror.nju.edu.cn/immortalwrt/snapshots/targets/rockchip/armv8/ \
      immortalwrt-sdk-rockchip-armv8_gcc-14.4.0_musl.Linux-x86_64.tar.zst
 # 2. 解包后克隆 luci feed，把本包放进 applications/
@@ -125,7 +169,7 @@ luci-app-sunpanel/
 └── tools/                         # gen_po.mjs / build_in_wsl.sh / 诊断脚本
 ```
 
-产物（`bin/packages/aarch64_generic/luci/`）：
+产物（`bin/packages/<arch>/luci/`）：
 `luci-app-sunpanel_1.0.0-<release>_all.apk`、`luci-i18n-sunpanel-zh-cn_<ver>_all.apk`、
 签名公钥 `public-key.pem`（即 `dist/sunpanel-local.pub.pem`）。
 
@@ -148,8 +192,7 @@ luci-app-sunpanel/
 
 - v2 目前（2.0.2-beta*）为官方 beta/开发版，官方明确提示勿直接用于正式环境；请保持备份习惯
   （v2 界面同样支持导出备份）。
-- v2 全新安装默认密码为 `admin@sun.cc / 12345678`，导入迁移完成后请及时修改。
+- v2 全新安装默认密码为 `admin@sun.cc / 12345678`，首次登录后请及时修改。
 - 更早的 v2 beta（260912/261101/261110 等）官方未发布到 GitHub，无法通过版本管理安装；
   当前可安装的 V2 版本以「检查更新」实际返回为准。
-- 旧 v1 数据目录（如 `/mnt/mmcblk0p1/Configs/SunPanel`）迁移完成后仍会保留，确认 v2 一切正常后
-  再手动删除。
+- 旧 v1 数据目录迁移完成后仍会保留，确认 v2 一切正常后再手动删除。
